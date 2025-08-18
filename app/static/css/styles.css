@@ -1,0 +1,1310 @@
+/* Enable smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+body{
+  background-color: rgb(233, 237, 255);
+  color: rgb(80, 80, 80);
+}
+
+
+/*components styling*/
+.clarifai-btn{
+  background-color: #444cde;
+  color: white;
+  padding: 15px 20px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  text-decoration: none; /* Remove underline */
+  font-weight: bold;
+}
+
+.clarifai-btn:hover {
+  background-color: #dd0058; /* Dark purple */
+}
+
+.text-clarifai{
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+/* Hero Section Styling */
+.hero-section{
+  height: 100vh;
+  background : url(../images/body-bg2.jpg);
+  background-size: cover;    /* Make it fill the section */
+  background-position: center; /* Center the image */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-section h1 {
+  font-size: 7rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-section p {
+  font-size: 1.7rem;
+  margin-bottom: 90px;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+.hero-content {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeSlideUp 1s ease-out forwards;
+  animation-delay: 0.3s; /* Wait a bit after load */
+}
+
+.clarifai-text-main h1 {
+  font-size: 7rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.clarifai-text-main p {
+  font-size: 1.7rem;
+  margin-bottom: 30px;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+@keyframes fadeSlideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-page, .signup-page {
+  height: 100vh;
+  background : url(../images/body-bg2.jpg);
+  background-size: cover;    /* Make it fill the section */
+  background-position: center; /* Center the image */
+  color: rgb(45, 45, 45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+
+.get-started-btn {
+  background-color: #444cde;
+  color: white;
+  padding: 18px 30px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.35rem;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  text-decoration: none; /* Remove underline */
+  font-weight: bold;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeSlideUp 1s ease-out forwards;
+  animation-delay: 1.5s; /* Show after other content */
+}
+
+.get-started-btn:hover {
+  background-color: #dd0058; /* Dark purple */
+}
+
+/* Arrow styling */
+.get-started-btn::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 15px;
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 24px solid #3c011e; /* Arrow color */
+  opacity: 0;
+  transition: opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+/* On hover, show the arrow */
+.get-started-btn:hover::after {
+  opacity: 1;
+  margin-top: 25px; /* Increase the space for the larger arrow */
+  border-top-color: #dd0058; /* Change the arrow color to match the new background */
+}
+
+/*NavBar Styling*/
+#mainNavbar {
+  padding: 15px 0;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+#mainNavbar.navbar-shrink {
+  padding: 10px 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+
+.navbar-shrink #logo {
+  height: 40px;
+}
+
+.nav-link {
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.navbar-shrink .nav-link {
+  font-size: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  #mainNavbar {
+    padding: 15px 0;
+  }
+  .navbar-shrink {
+    padding: 10px 0 !important;
+  }
+}
+
+.custom-navbar {
+  background-color: #e9edff !important;
+}
+
+.navbar-brand{
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+  font-size: 1.8rem;
+  margin-left: 20px;
+  margin-right: 20px;
+  transition: all 0.3s ease;
+}
+
+.navbar-shrink .navbar-brand {
+  font-size: 1.5rem; /* Reduced font size */
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+/* Main Section Styling */
+
+.main-section {
+  scroll-margin-top: 50px; /* Match your navbar height */
+}
+
+.welcome-text{
+  margin-top: 35px;
+}
+
+.welcome-text h2{
+  font-size: 3rem;
+}
+
+.welcome-text h3{
+  font-size: 2.5rem;
+}
+
+.welcome-text p{
+  font-size: 1.4rem;
+  margin-top: 20px;
+  line-height: 45px;
+  
+}
+
+
+
+.code-form {
+  background-color: #c0c8f1;
+  padding: 20px;
+  color: rgb(80, 80, 80);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-top: 10px;
+}
+
+.code-form label {
+  color: rgb(80, 80, 80);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.code-form textarea{
+  background-color: #181923;
+  color: whitesmoke;
+}
+
+.code-form textarea:focus{
+  background-color: #181923;
+  color: whitesmoke;
+}
+.code-form textarea::placeholder{
+  color: rgb(113, 113, 113);
+  
+}
+
+/*Monaco-specific styling */
+#editorContainer {
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Fix Monaco font */
+.monaco-editor {
+  font-family: 'Fira Code', monospace !important;
+}
+
+/* Optional: Add custom scrollbar */
+.monaco-scrollable-element > .scrollbar > .slider {
+  background: rgba(121, 121, 121, 0.4) !important;
+}
+
+/* Output Containers Styling */
+/* Original Output Styles */
+
+.form-control {
+  background-color: #ffffff !important;
+  color: rgb(80, 80, 80) !important;
+  border: 1px solid #616a9a !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.form-label{
+  color: rgb(80, 80, 80) !important;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.auto-resize {
+  min-height: 300px;
+  resize: none;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ecefff;
+  opacity: 0.7;
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.loading-text {
+  margin-top: 10px;
+  color: #6262a0;
+}
+
+
+
+
+/* AST Specific Styles */
+.ast-output, .comments-output {
+  height: auto !important;
+  min-height: 300px;
+  max-height: 600px; /* Optional max height for very large content */
+}
+
+@media (min-width: 992px) {
+  .col-lg-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    height: 600px; /* Add fixed height */
+    overflow: hidden; /* Contain content */
+  }
+}
+
+/* Add mobile responsiveness */
+@media (max-width: 991.98px) {
+  .col-lg-6 {
+    height: auto !important;
+    min-height: 300px;
+  }
+}
+
+/* Ensure textareas remain visible */
+.comments-output, .ast-output {
+  height: 100% !important; /* Fill parent height */
+  min-height: 300px;
+  overflow: auto !important;
+  resize: none; /* Disable manual resize */
+}
+
+.loading #commentsOutput,
+.loading #astOutput {
+  opacity: 0.3;
+}
+
+/* Change spinner color */
+.loading-overlay .spinner-border {
+    color: #dd0058; /* Your accent color */
+}
+
+/* Change overlay background */
+.loading-overlay {
+  top: 0; /* Was 40px - fix positioning */
+  bottom: 0;
+  border-radius: 0; /* Remove border radius */
+}
+.ast-class, .ast-method {
+  display: block;
+  width: fit-content; /* Prevent horizontal expansion */
+  max-width: 100%;
+  margin: 2px 0;
+  padding: 3px 8px;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+}
+
+/* Comment items */
+.ast-tree, .comment-class, .comment-method {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.ast-class.active-parent {
+  border-left: 3px solid #dd0058;
+  background: rgba(221, 0, 88, 0.1);
+  /* No size change */
+  padding-left: 5px;
+  margin-left: -5px;
+}
+
+.row.g-4 {
+  margin-top: 1rem;
+  padding: 0 15px; /* Prevent horizontal overflow */
+}
+
+/* Highlight matching AST nodes */
+.ast-class.active, .ast-method.active {
+  background: rgba(221, 0, 88, 0.25);
+  border-radius: 4px;
+}
+
+/* AST Highlighting */
+.ast-class.active,
+.ast-method.active {
+    background: rgba(221, 0, 88, 0.25) !important;
+    position: relative;
+    z-index: 1;
+    /* Instead of scaling, use border and shadow */
+    border: 2px solid #dd0058;
+    box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
+    /* Maintain original size */
+    transform: none;
+    margin: -2px; /* Compensate for border */
+}
+
+.ast-class.active-parent {
+  border-left: 3px solid #dd0058;
+  background: rgba(221, 0, 88, 0.1);
+  /* No size change */
+  padding-left: 5px;
+  margin-left: -5px;
+}
+
+.ast-error, .comment-error {
+  color: #dc3545 ;
+  padding: 15px;
+  background: rgba(220, 53, 69, 0.1) ;
+  border: 2px solid #dc3545 ;
+  border-radius: 4px;
+  margin: 10px 0;
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
+
+.error-line {
+  font-weight: bold;
+  color: #8b0000;
+  text-decoration: underline;
+}
+
+
+/*Upload File Button Styling */
+
+.code-form .btn-sm {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  border-radius: 20px;
+}
+
+.code-form input[type="file"] + label {
+  color: #f5f5f5 !important; /* Smokewhite color */
+  transition: all 0.3s ease;
+}
+
+.code-form input[type="file"] + label:hover {
+  color: #f5f5f5 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+
+/* Submission items styling */
+.submission-item {
+  transition: all 0.3s ease;
+  background-color: #ecefff;
+  border-left: 3px solid transparent;
+}
+
+.submission-item:hover {
+  border-left-color: #dd0058;
+  transform: translateX(3px);
+}
+
+.submission-name-display {
+  font-weight: medium;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.submission-name {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Button styles */
+.btn-group .btn {
+  border-radius: 4px;
+  margin-left: 3px;
+}
+
+.edit-name-btn {
+  width: 38px;
+}
+
+.preview-btn {
+  font-size: 0.85rem;
+}
+
+/* Preview container */
+#previewEditor {
+  height: 500px !important;
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+#previewLoading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(233, 237, 255, 0.7);
+  z-index: 100;
+}
+
+#previewError {
+  margin-bottom: 0;
+}
+
+/* Card styling */
+.card {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  background: linear-gradient(to right, #444cde, #6b00de) !important;
+  border: none;
+  padding: 12px 20px;
+}
+
+/* Make sure the Monaco editor container has the right z-index */
+.monaco-editor {
+  z-index: 1;
+}
+
+.card-body {
+  padding : 30px;
+  background-color: #ffffff;
+}
+
+.login-label{
+  margin-bottom: 40px !important;
+  font-size: 2.5rem ;
+}
+
+/* CFG output styling */
+#cfgOutput img {
+    max-width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    background: white;
+}
+
+/* Zoom controls */
+.btn-group {
+    margin-left: 10px;
+}
+
+/* CFG Container Styles */
+#cfgContainer {
+    touch-action: none; /* Prevent touch scrolling on mobile */
+    cursor: grab;
+}
+
+#cfgContainer:active {
+    cursor: grabbing;
+}
+
+#cfgImageWrapper {
+    transition: transform 0.1s ease-out;
+}
+
+#cfgImage {
+    pointer-events: none; /* Prevent image from interfering with drag */
+}
+
+
+/* Enable smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+body{
+  background-color: rgb(233, 237, 255);
+  color: rgb(80, 80, 80);
+}
+
+
+/*components styling*/
+.clarifai-btn{
+  background-color: #444cde;
+  color: white;
+  padding: 15px 20px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  text-decoration: none; /* Remove underline */
+  font-weight: bold;
+}
+
+.clarifai-btn:hover {
+  background-color: #dd0058; /* Dark purple */
+}
+
+.text-clarifai{
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+/* Hero Section Styling */
+.hero-section{
+  height: 100vh;
+  background : url(../images/body-bg2.jpg);
+  background-size: cover;    /* Make it fill the section */
+  background-position: center; /* Center the image */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.hero-section h1 {
+  font-size: 7rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-section p {
+  font-size: 1.7rem;
+  margin-bottom: 90px;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+.hero-content {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeSlideUp 1s ease-out forwards;
+  animation-delay: 0.3s; /* Wait a bit after load */
+}
+
+.clarifai-text-main h1 {
+  font-size: 7rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.clarifai-text-main p {
+  font-size: 1.7rem;
+  margin-bottom: 30px;
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}
+
+@keyframes fadeSlideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-page, .signup-page {
+  height: 100vh;
+  background : url(../images/body-bg2.jpg);
+  background-size: cover;    /* Make it fill the section */
+  background-position: center; /* Center the image */
+  color: rgb(45, 45, 45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+
+.get-started-btn {
+  background-color: #444cde;
+  color: white;
+  padding: 18px 30px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.35rem;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  text-decoration: none; /* Remove underline */
+  font-weight: bold;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeSlideUp 1s ease-out forwards;
+  animation-delay: 1.5s; /* Show after other content */
+}
+
+.get-started-btn:hover {
+  background-color: #dd0058; /* Dark purple */
+}
+
+/* Arrow styling */
+.get-started-btn::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 15px;
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-top: 24px solid #3c011e; /* Arrow color */
+  opacity: 0;
+  transition: opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+/* On hover, show the arrow */
+.get-started-btn:hover::after {
+  opacity: 1;
+  margin-top: 25px; /* Increase the space for the larger arrow */
+  border-top-color: #dd0058; /* Change the arrow color to match the new background */
+}
+
+/*NavBar Styling*/
+#mainNavbar {
+  padding: 15px 0;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+#mainNavbar.navbar-shrink {
+  padding: 10px 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+
+.navbar-shrink #logo {
+  height: 40px;
+}
+
+.nav-link {
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.navbar-shrink .nav-link {
+  font-size: 1rem;
+}
+
+@media (max-width: 991.98px) {
+  #mainNavbar {
+    padding: 15px 0;
+  }
+  .navbar-shrink {
+    padding: 10px 0 !important;
+  }
+}
+
+.custom-navbar {
+  background-color: #e9edff !important;
+}
+
+.navbar-brand{
+  background: linear-gradient(to right, #dd0058, #6b00de);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+  font-size: 1.8rem;
+  margin-left: 20px;
+  margin-right: 20px;
+  transition: all 0.3s ease;
+}
+
+.navbar-shrink .navbar-brand {
+  font-size: 1.5rem; /* Reduced font size */
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+/* Main Section Styling */
+
+.main-section {
+  scroll-margin-top: 50px; /* Match your navbar height */
+}
+
+.welcome-text{
+  margin-top: 35px;
+}
+
+.welcome-text h2{
+  font-size: 3rem;
+}
+
+.welcome-text h3{
+  font-size: 2.5rem;
+}
+
+.welcome-text p{
+  font-size: 1.4rem;
+  margin-top: 20px;
+  line-height: 45px;
+  
+}
+
+
+
+.code-form {
+  background-color: #c0c8f1;
+  padding: 20px;
+  color: rgb(80, 80, 80);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  margin-top: 10px;
+}
+
+.code-form label {
+  color: rgb(80, 80, 80);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.code-form textarea{
+  background-color: #181923;
+  color: whitesmoke;
+}
+
+.code-form textarea:focus{
+  background-color: #181923;
+  color: whitesmoke;
+}
+.code-form textarea::placeholder{
+  color: rgb(113, 113, 113);
+  
+}
+
+/*Monaco-specific styling */
+#editorContainer {
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Fix Monaco font */
+.monaco-editor {
+  font-family: 'Fira Code', monospace !important;
+}
+
+/* Optional: Add custom scrollbar */
+.monaco-scrollable-element > .scrollbar > .slider {
+  background: rgba(121, 121, 121, 0.4) !important;
+}
+
+/* Output Containers Styling */
+/* Original Output Styles */
+
+.form-control {
+  background-color: #ffffff !important;
+  color: rgb(80, 80, 80) !important;
+  border: 1px solid #616a9a !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.form-label{
+  color: rgb(80, 80, 80) !important;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.auto-resize {
+  min-height: 300px;
+  resize: none;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ecefff;
+  opacity: 0.7;
+  z-index: 100;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.loading-text {
+  margin-top: 10px;
+  color: #6262a0;
+}
+
+
+
+
+/* AST Specific Styles */
+.ast-output, .comments-output {
+  height: auto !important;
+  min-height: 300px;
+  max-height: 600px; /* Optional max height for very large content */
+}
+
+@media (min-width: 992px) {
+  .col-lg-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+    height: 600px; /* Add fixed height */
+    overflow: hidden; /* Contain content */
+  }
+}
+
+/* Add mobile responsiveness */
+@media (max-width: 991.98px) {
+  .col-lg-6 {
+    height: auto !important;
+    min-height: 300px;
+  }
+}
+
+/* Ensure textareas remain visible */
+.comments-output, .ast-output {
+  height: 100% !important; /* Fill parent height */
+  min-height: 300px;
+  overflow: auto !important;
+  resize: none; /* Disable manual resize */
+}
+
+.loading #commentsOutput,
+.loading #astOutput {
+  opacity: 0.3;
+}
+
+/* Change spinner color */
+.loading-overlay .spinner-border {
+    color: #dd0058; /* Your accent color */
+}
+
+/* Change overlay background */
+.loading-overlay {
+  top: 0; /* Was 40px - fix positioning */
+  bottom: 0;
+  border-radius: 0; /* Remove border radius */
+}
+.ast-class, .ast-method {
+  display: block;
+  width: fit-content; /* Prevent horizontal expansion */
+  max-width: 100%;
+  margin: 2px 0;
+  padding: 3px 8px;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+}
+
+/* Comment items */
+.ast-tree, .comment-class, .comment-method {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.ast-class.active-parent {
+  border-left: 3px solid #dd0058;
+  background: rgba(221, 0, 88, 0.1);
+  /* No size change */
+  padding-left: 5px;
+  margin-left: -5px;
+}
+
+.row.g-4 {
+  margin-top: 1rem;
+  padding: 0 15px; /* Prevent horizontal overflow */
+}
+
+/* Highlight matching AST nodes */
+.ast-class.active, .ast-method.active {
+  background: rgba(221, 0, 88, 0.25);
+  border-radius: 4px;
+}
+
+/* AST Highlighting */
+.ast-class.active,
+.ast-method.active {
+    background: rgba(221, 0, 88, 0.25) !important;
+    position: relative;
+    z-index: 1;
+    /* Instead of scaling, use border and shadow */
+    border: 2px solid #dd0058;
+    box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
+    /* Maintain original size */
+    transform: none;
+    margin: -2px; /* Compensate for border */
+}
+
+.ast-class.active-parent {
+  border-left: 3px solid #dd0058;
+  background: rgba(221, 0, 88, 0.1);
+  /* No size change */
+  padding-left: 5px;
+  margin-left: -5px;
+}
+
+.ast-error, .comment-error {
+  color: #dc3545 ;
+  padding: 15px;
+  background: rgba(220, 53, 69, 0.1) ;
+  border: 2px solid #dc3545 ;
+  border-radius: 4px;
+  margin: 10px 0;
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
+
+.error-line {
+  font-weight: bold;
+  color: #8b0000;
+  text-decoration: underline;
+}
+
+
+/*Upload File Button Styling */
+
+.code-form .btn-sm {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  border-radius: 20px;
+}
+
+.code-form input[type="file"] + label {
+  color: #f5f5f5 !important; /* Smokewhite color */
+  transition: all 0.3s ease;
+}
+
+.code-form input[type="file"] + label:hover {
+  color: #f5f5f5 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+
+/* Submission items styling */
+.submission-item {
+  transition: all 0.3s ease;
+  background-color: #ecefff;
+  border-left: 3px solid transparent;
+}
+
+.submission-item:hover {
+  border-left-color: #dd0058;
+  transform: translateX(3px);
+}
+
+.submission-name-display {
+  font-weight: medium;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}
+
+.submission-name {
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Button styles */
+.btn-group .btn {
+  border-radius: 4px;
+  margin-left: 3px;
+}
+
+.edit-name-btn {
+  width: 38px;
+}
+
+.preview-btn {
+  font-size: 0.85rem;
+}
+
+/* Preview container */
+#previewEditor {
+  height: 500px !important;
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+#previewLoading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(233, 237, 255, 0.7);
+  z-index: 100;
+}
+
+#previewError {
+  margin-bottom: 0;
+}
+
+/* Card styling */
+.card {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+  background: linear-gradient(to right, #444cde, #6b00de) !important;
+  border: none;
+  padding: 12px 20px;
+}
+
+/* Make sure the Monaco editor container has the right z-index */
+.monaco-editor {
+  z-index: 1;
+}
+
+.card-body {
+  padding : 30px;
+  background-color: #ffffff;
+}
+
+.login-label{
+  margin-bottom: 40px !important;
+  font-size: 2.5rem ;
+}
+
+/* CFG output styling */
+#cfgOutput img {
+    max-width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    background: white;
+}
+
+/* Zoom controls */
+.btn-group {
+    margin-left: 10px;
+}
+
+/* CFG Container Styles */
+#cfgContainer {
+    touch-action: none; /* Prevent touch scrolling on mobile */
+    cursor: grab;
+}
+
+#cfgContainer:active {
+    cursor: grabbing;
+}
+
+#cfgImageWrapper {
+    transition: transform 0.1s ease-out;
+}
+
+#cfgImage {
+    pointer-events: none; /* Prevent image from interfering with drag */
+}
+
+
+/* styles.css */
+.link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 2px;
+}
+
+.node circle {
+    stroke: #3a3f5b;
+    stroke-width: 3px;
+}
+
+.node-root circle {
+    fill: #6c5ce7;
+}
+
+.node-class circle {
+    fill: #0984e3;
+}
+
+.node-fields circle {
+    fill: #00b894;
+}
+
+.node-methods circle {
+    fill: #e17055;
+}
+
+.node-field circle, .node-method circle {
+    fill: #fdcb6e;
+}
+
+.ast-node-text {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+#astTreeContainer {
+    display: none;
+    border: 1px solid #ddd;
+    background-color: white;
+    overflow: hidden;
+}
+
+/* For vertical tree */
+.node text {
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    dominant-baseline: middle;
+}
+
+.ast-node-text {
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
+    dominant-baseline: middle;
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+}
+
+.ast-node-text tspan {
+    dominant-baseline: hanging;
+}
+
+#astTreeContainer {
+    display: none;
+    border: 1px solid #ddd;
+    background-color: white;
+    overflow: auto; /* Add scrolling for large trees */
+}
+
+.node {
+    cursor: pointer;
+}
+
+.node:hover circle {
+    stroke-width: 4px;
+    stroke: #ff9900;
+}
+
