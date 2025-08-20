@@ -26,6 +26,7 @@ body{
 
 .clarifai-btn:hover {
   background-color: #ff0000f0; /* Dark purple */
+  color: white !important;
 }
 
 .zoom-btn{
