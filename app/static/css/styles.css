@@ -25,7 +25,7 @@ body{
 }
 
 .clarifai-btn:hover {
-  background-color: #ff3f3f; /* Dark purple */
+  background-color: #ff0000f0; /* Dark purple */
 }
 
 .zoom-btn{
@@ -47,7 +47,7 @@ body{
 }
 
 .text-clarifai{
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #e22020, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -71,7 +71,7 @@ body{
 .hero-section h1 {
   font-size: 7rem;
   font-weight: bold;
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #e22020, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -80,7 +80,7 @@ body{
 .hero-section p {
   font-size: 1.7rem;
   margin-bottom: 60px;
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #ff0000f0, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -105,7 +105,7 @@ body{
   font-size: 7rem;
   margin-top: 20px;
   font-weight: bold;
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #ff0000f0, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -113,7 +113,7 @@ body{
 
 .clarifai-text-main p {
   font-size: 1.7rem;
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #ff0000f0, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -139,7 +139,7 @@ body{
 }
 
 .get-started-btn:hover {
-  background-color: #ff3f3f; /* Dark purple */
+  background-color: #ff0000f0; /* Dark purple */
 }
 
 /* Arrow styling */
@@ -163,7 +163,7 @@ body{
 .get-started-btn:hover::after {
   opacity: 1;
   margin-top: 20px; /* Increase the space for the larger arrow */
-  border-top-color: #ff3f3f; /* Change the arrow color to match the new background */
+  border-top-color: #ff0000f0; /* Change the arrow color to match the new background */
 }
 
 .login-page, .signup-page {
@@ -217,7 +217,7 @@ body{
 }
 
 .navbar-brand{
-  background: linear-gradient(to right, #ff3f3f, #3b6cff);
+  background: linear-gradient(to right, #ff0000f0, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -356,7 +356,7 @@ body{
 
 /* Change spinner color */
 .loading-overlay .spinner-border {
-    color: #ff3f3f; /* Your accent color */
+    color: #ff0000f0; /* Your accent color */
 }
 
 .loading #commentsOutput,
@@ -434,7 +434,7 @@ body{
   background: rgba(221, 0, 88, 0.25) !important;
   position: relative;
   z-index: 1;
-  border: 2px solid #ff3f3f;
+  border: 2px solid #ff0000f0;
   box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
   border-radius: 4px;
   transform: none;
@@ -442,7 +442,7 @@ body{
 }
 
 .ast-class.active-parent {
-  border-left: 3px solid #ff3f3f;
+  border-left: 3px solid #ff0000f0;
   background: rgba(221, 0, 88, 0.1);
   /* No size change */
   padding-left: 5px;
@@ -450,10 +450,10 @@ body{
 }
 
 .ast-error, .comment-error {
-  color: #ff3f3f ;
+  color: #ff0000f0 ;
   padding: 15px;
   background: rgba(220, 53, 69, 0.1) ;
-  border: 2px solid #ff3f3f ;
+  border: 2px solid #ff0000f0 ;
   border-radius: 4px;
   margin: 10px 0;
   white-space: pre-wrap;
@@ -492,7 +492,7 @@ body{
 }
 
 .submission-item:hover {
-  border-left-color: #ff3f3f;
+  border-left-color: #ff0000f0;
   transform: translateX(3px);
 }
 
@@ -556,8 +556,14 @@ body{
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.card-header {
-  background: #ff3f3f !important;
+.card-header-red {
+  background: #ff0000f0 !important;
+  border: none;
+  padding: 12px 20px;
+}
+
+.card-header-blue {
+  background: #3b6cff !important;
   border: none;
   padding: 12px 20px;
 }
