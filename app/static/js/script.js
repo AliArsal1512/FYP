@@ -932,3 +932,192 @@ function handleCFGError(error) {
     }
     console.error('CFG Error:', error);
 }
+
+// Global variable to store the file structure
+let fileStructure = {};
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+  // ... existing initialization code ...
+  
+  // Add event listeners for folder upload and sidebar
+  if (document.getElementById('folderUpload')) {
+    document.getElementById('folderUpload').addEventListener('change', handleFolderUpload);
+  }
+  
+  if (document.getElementById('toggleSidebar')) {
+    document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+  }
+  
+  if (document.getElementById('closeSidebar')) {
+    document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
+  }
+  
+  if (document.getElementById('refreshFileTree')) {
+    document.getElementById('refreshFileTree').addEventListener('click', refreshFileTree);
+  }
+});
+
+// Handle folder upload
+function handleFolderUpload(e) {
+  const files = e.target.files;
+  if (!files.length) return;
+  
+  // Reset file structure
+  fileStructure = {};
+  
+  // Process each file
+  Array.from(files).forEach(file => {
+    if (file.name.endsWith('.java')) {
+      addFileToStructure(file.webkitRelativePath || file.name, file);
+    }
+  });
+  
+  // Display file tree in sidebar
+  renderFileTree();
+  
+  // Show the sidebar
+  document.getElementById('fileSidebar').style.display = 'block';
+  
+  // Read the first Java file and load it into the editor
+  const firstJavaFile = findFirstJavaFile(fileStructure);
+  if (firstJavaFile) {
+    readFileContent(firstJavaFile.file);
+  }
+}
+
+// Add file to the hierarchical structure
+function addFileToStructure(path, file) {
+  const parts = path.split('/');
+  let currentLevel = fileStructure;
+  
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!currentLevel[part]) {
+      currentLevel[part] = { _type: 'folder' };
+    }
+    currentLevel = currentLevel[part];
+  }
+  
+  const fileName = parts[parts.length - 1];
+  currentLevel[fileName] = { 
+    _type: 'file', 
+    file: file,
+    path: path
+  };
+}
+
+// Find the first Java file in the structure
+function findFirstJavaFile(structure) {
+  for (const key in structure) {
+    if (key === '_type') continue;
+    
+    if (structure[key]._type === 'file' && key.endsWith('.java')) {
+      return structure[key];
+    } else if (structure[key]._type === 'folder') {
+      const result = findFirstJavaFile(structure[key]);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+// Render the file tree in the sidebar
+function renderFileTree() {
+  const fileTreeElement = document.getElementById('fileTree');
+  fileTreeElement.innerHTML = '';
+  
+  if (Object.keys(fileStructure).length === 0) {
+    fileTreeElement.innerHTML = '<p class="text-muted p-2">No files uploaded</p>';
+    return;
+  }
+  
+  const tree = buildFileTreeHTML(fileStructure);
+  fileTreeElement.appendChild(tree);
+}
+
+// Build HTML for the file tree
+function buildFileTreeHTML(structure, level = 0) {
+  const ul = document.createElement('ul');
+  ul.style.paddingLeft = level > 0 ? '16px' : '0';
+  
+  for (const key in structure) {
+    if (key === '_type') continue;
+    
+    const li = document.createElement('li');
+    const item = structure[key];
+    
+    if (item._type === 'folder') {
+      li.innerHTML = `
+        <div class="folder" data-name="${key}">
+          <span class="folder-name">${key}</span>
+        </div>
+      `;
+      
+      // Add click event to toggle folder
+      li.querySelector('.folder').addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('expanded');
+        const children = this.nextElementSibling;
+        if (children) {
+          children.style.display = children.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+      
+      // Create children container (initially hidden)
+      const childrenContainer = buildFileTreeHTML(item, level + 1);
+      childrenContainer.style.display = 'none';
+      li.appendChild(childrenContainer);
+      
+    } else if (item._type === 'file' && key.endsWith('.java')) {
+      li.innerHTML = `
+        <div class="file java" data-path="${item.path}">
+          ${key}
+        </div>
+      `;
+      
+      // Add click event to load file content
+      li.querySelector('.file').addEventListener('click', function() {
+        readFileContent(item.file);
+        
+        // Highlight selected file
+        document.querySelectorAll('.file-tree .file').forEach(el => {
+          el.classList.remove('selected');
+        });
+        this.classList.add('selected');
+      });
+    }
+    
+    ul.appendChild(li);
+  }
+  
+  return ul;
+}
+
+// Read file content and set it in the editor
+function readFileContent(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const contents = e.target.result;
+    if (window.editor) {
+      window.editor.setValue(contents);
+      document.getElementById('hiddenCode').value = contents;
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Toggle sidebar visibility
+function toggleSidebar() {
+  const sidebar = document.getElementById('fileSidebar');
+  if (sidebar.style.display === 'none') {
+    sidebar.style.display = 'block';
+  } else {
+    sidebar.style.display = 'none';
+  }
+}
+
+// Refresh file tree
+function refreshFileTree() {
+  renderFileTree();
+}

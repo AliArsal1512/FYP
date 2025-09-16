@@ -671,3 +671,77 @@ body{
     text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
     dominant-baseline: middle;
 }
+
+/* Sidebar Styles */
+.file-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  height: calc(100vh - 76px);
+  overflow-y: auto;
+  position: fixed;
+  top: 76px;
+  transition: all 0.3s ease;
+  z-index: 60;
+}
+
+.sidebar-header {
+  border-bottom: 1px solid #dee2e6;
+  background-color: #e9ecef;
+}
+
+.file-tree {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.file-tree ul {
+  list-style-type: none;
+  padding-left: 16px;
+}
+
+.file-tree li {
+  margin: 4px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree li:hover {
+  background-color: #e9ecef;
+}
+
+.file-tree .folder::before {
+  content: '📁 ';
+  margin-right: 4px;
+}
+
+.file-tree .file::before {
+  content: '📄 ';
+  margin-right: 4px;
+}
+
+.file-tree .folder.expanded::before {
+  content: '📂 ';
+}
+
+.file-tree .file.java::before {
+  content: '☕ ';
+}
+
+/* Toggle button for sidebar */
+#toggleSidebar {
+  display: none; /* Initially hidden on mobile */
+  position: fixed;
+  top: 90px;
+  left: 10px;
+  z-index : 50;
+}
+
+@media (min-width: 992px) {
+  #toggleSidebar {
+    display: inline-block;
+  }
+}
