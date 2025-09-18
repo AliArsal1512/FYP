@@ -745,3 +745,90 @@ body{
     display: inline-block;
   }
 }
+
+.ast-comment-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-width: 300px;
+    z-index: 1000;
+}
+
+.ast-comment-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #3b6cff;
+}
+
+.ast-comment-content {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.comment-indicator {
+    cursor: pointer;
+}
+
+.comment-indicator:hover {
+    fill: #ff6600;
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+/* Comment tooltip styles */
+.comment-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #3b6cff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(59, 108, 255, 0.2);
+    max-width: 300px;
+    z-index: 1000;
+    font-family: 'Gill Sans', sans-serif;
+}
+
+.comment-tooltip-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #3b6cff;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.comment-tooltip-content {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.comment-tooltip-close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #999;
+}
+
+.comment-tooltip-close:hover {
+    color: #ff0000;
+}
+
+/* Comment indicator for AST nodes */
+.comment-indicator {
+    cursor: pointer;
+    fill: #ff9900;
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+.comment-indicator:hover {
+    fill: #ff6600;
+    stroke-width: 2px;
+}

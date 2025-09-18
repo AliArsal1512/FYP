@@ -259,11 +259,40 @@ def build_ast_json(java_code: str) -> dict:
     try:
         tree = javalang.parse.parse(java_code)
         classes = []
+        
+        # Extract classes and methods first to generate comments
+        class_structure = extract_classes(java_code)
+        method_structure = extract_methods(java_code)
+        
+        # Generate comments for classes
+        class_comments = {}
+        for class_name, class_code in class_structure.items():
+            if not isinstance(class_code, str):  # Skip error responses
+                continue
+            processed_class = preprocess_code(class_code)
+            if current_app.hf_pipeline:
+                result = current_app.hf_pipeline(processed_class)
+                comment = clean_comment(result[0]['generated_text'])
+                class_comments[class_name] = comment
+        
+        # Generate comments for methods
+        method_comments = {}
+        for class_name, methods in method_structure.items():
+            if not isinstance(methods, list):  # Skip error responses
+                continue
+            for method in methods:
+                processed_method = preprocess_code(method['code'])
+                if current_app.hf_pipeline:
+                    result = current_app.hf_pipeline(processed_method)
+                    comment = clean_comment(result[0]['generated_text'])
+                    method_comments[(class_name, method['name'])] = comment
 
+        # Build AST with comments
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
             class_data = {
                 "name": class_node.name,
                 "type": "class",
+                "comment": class_comments.get(class_node.name, "No comment available"),
                 "children": []
             }
 
@@ -298,7 +327,8 @@ def build_ast_json(java_code: str) -> dict:
                     params = ", ".join([f"{p.type.name} {p.name}" for p in method.parameters]) if method.parameters else ""
                     method_data = {
                         "name": f"{modifiers} {return_type} {method.name}({params})",
-                        "type": "method"
+                        "type": "method",
+                        "comment": method_comments.get((class_node.name, method.name), "No comment available")
                     }
                     methods_node["children"].append(method_data)
                 class_data["children"].append(methods_node)

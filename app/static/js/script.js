@@ -380,15 +380,20 @@ function drawTree(container, rootNode) {
     .text(d => d.data.name);
 
   // small toggle indicator for nodes with children/_children
-  nodeG.filter(d => d.data.children || d.data._children)
-    .append('path')
-    .attr('class', 'node-toggle')
-    .attr('d', d => d.data.children ? 'M -6 8 L 0 2 L 6 8 Z' : 'M -3 -6 L 3 0 L -3 6 Z')
-    .attr('transform', d => {
-      const textW = Math.ceil(measureTextWidth(d.data.name || '', fontSize));
-      return `translate(${Math.max(18, Math.ceil(textW / 2) + horizontalPadding)}, -6)`;
-    })
-    .style('fill', '#0077ffff');
+  nodeG.filter(d => d.data.comment && d.data.comment !== "No comment available")
+        .append('circle')
+        .attr('class', 'comment-indicator')
+        .attr('r', 6)
+        .attr('fill', '#ff9900')
+        .attr('transform', d => {
+            const textW = Math.ceil(measureTextWidth(d.data.name || '', fontSize));
+            return `translate(${Math.max(18, Math.ceil(textW / 2) + horizontalPadding + 10)}, -6)`;
+        })
+        .style('cursor', 'pointer')
+        .on('click', function(event, d) {
+            event.stopPropagation();
+            showCommentTooltip(d.data.comment, event.pageX, event.pageY);
+        });
 
   // ---- zoom/pan behaviour (applied to svg) ----
   const zoom = d3.zoom()
@@ -1120,4 +1125,66 @@ function toggleSidebar() {
 // Refresh file tree
 function refreshFileTree() {
   renderFileTree();
+}
+
+// Add this function to create comment tooltips
+function createCommentTooltip(comment) {
+    return `<div class="ast-comment-tooltip">
+        <div class="ast-comment-header">Comment</div>
+        <div class="ast-comment-content">${comment}</div>
+    </div>`;
+}
+
+// Add function to show comment tooltip
+function showCommentTooltip(comment, x, y) {
+    // Remove existing tooltip if any
+    d3.selectAll('.comment-tooltip').remove();
+    
+    // Create tooltip
+    const tooltip = d3.select('body')
+        .append('div')
+        .attr('class', 'comment-tooltip')
+        .style('position', 'absolute')
+        .style('left', `${x + 10}px`)
+        .style('top', `${y - 10}px`)
+        .style('background', '#fff')
+        .style('border', '1px solid #ccc')
+        .style('border-radius', '4px')
+        .style('padding', '8px')
+        .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
+        .style('max-width', '300px')
+        .style('z-index', '1000');
+    
+    // Add content
+    tooltip.append('div')
+        .attr('class', 'comment-tooltip-header')
+        .style('font-weight', 'bold')
+        .style('margin-bottom', '5px')
+        .text('Comment');
+    
+    tooltip.append('div')
+        .attr('class', 'comment-tooltip-content')
+        .text(comment);
+    
+    // Add close button
+    tooltip.append('button')
+        .attr('class', 'comment-tooltip-close')
+        .style('position', 'absolute')
+        .style('top', '5px')
+        .style('right', '5px')
+        .style('background', 'none')
+        .style('border', 'none')
+        .style('cursor', 'pointer')
+        .text('×')
+        .on('click', function() {
+            tooltip.remove();
+        });
+    
+    // Close tooltip when clicking outside
+    d3.select('body').on('click.comment-tooltip', function(event) {
+        if (!event.target.closest('.comment-tooltip')) {
+            tooltip.remove();
+            d3.select('body').on('click.comment-tooltip', null);
+        }
+    });
 }
