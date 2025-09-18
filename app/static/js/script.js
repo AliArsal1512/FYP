@@ -380,15 +380,20 @@ function drawTree(container, rootNode) {
     .text(d => d.data.name);
 
   // small toggle indicator for nodes with children/_children
-  nodeG.filter(d => d.data.children || d.data._children)
-    .append('path')
-    .attr('class', 'node-toggle')
-    .attr('d', d => d.data.children ? 'M -6 8 L 0 2 L 6 8 Z' : 'M -3 -6 L 3 0 L -3 6 Z')
-    .attr('transform', d => {
-      const textW = Math.ceil(measureTextWidth(d.data.name || '', fontSize));
-      return `translate(${Math.max(18, Math.ceil(textW / 2) + horizontalPadding)}, -6)`;
-    })
-    .style('fill', '#0077ffff');
+  nodeG.filter(d => d.data.comment && d.data.comment !== "No comment available")
+        .append('circle')
+        .attr('class', 'comment-indicator')
+        .attr('r', 6)
+        .attr('fill', '#ff9900')
+        .attr('transform', d => {
+            const textW = Math.ceil(measureTextWidth(d.data.name || '', fontSize));
+            return `translate(${Math.max(18, Math.ceil(textW / 2) + horizontalPadding + 10)}, -6)`;
+        })
+        .style('cursor', 'pointer')
+        .on('click', function(event, d) {
+            event.stopPropagation();
+            showCommentTooltip(d.data.comment, event.pageX, event.pageY);
+        });
 
   // ---- zoom/pan behaviour (applied to svg) ----
   const zoom = d3.zoom()
@@ -931,4 +936,255 @@ function handleCFGError(error) {
         cfgContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
     }
     console.error('CFG Error:', error);
+}
+
+// Global variable to store the file structure
+let fileStructure = {};
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+  // ... existing initialization code ...
+  
+  // Add event listeners for folder upload and sidebar
+  if (document.getElementById('folderUpload')) {
+    document.getElementById('folderUpload').addEventListener('change', handleFolderUpload);
+  }
+  
+  if (document.getElementById('toggleSidebar')) {
+    document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+  }
+  
+  if (document.getElementById('closeSidebar')) {
+    document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
+  }
+  
+  if (document.getElementById('refreshFileTree')) {
+    document.getElementById('refreshFileTree').addEventListener('click', refreshFileTree);
+  }
+});
+
+// Handle folder upload
+function handleFolderUpload(e) {
+  const files = e.target.files;
+  if (!files.length) return;
+  
+  // Reset file structure
+  fileStructure = {};
+  
+  // Process each file
+  Array.from(files).forEach(file => {
+    if (file.name.endsWith('.java')) {
+      addFileToStructure(file.webkitRelativePath || file.name, file);
+    }
+  });
+  
+  // Display file tree in sidebar
+  renderFileTree();
+  
+  // Show the sidebar
+  document.getElementById('fileSidebar').style.display = 'block';
+  
+  // Read the first Java file and load it into the editor
+  const firstJavaFile = findFirstJavaFile(fileStructure);
+  if (firstJavaFile) {
+    readFileContent(firstJavaFile.file);
+  }
+}
+
+// Add file to the hierarchical structure
+function addFileToStructure(path, file) {
+  const parts = path.split('/');
+  let currentLevel = fileStructure;
+  
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    if (!currentLevel[part]) {
+      currentLevel[part] = { _type: 'folder' };
+    }
+    currentLevel = currentLevel[part];
+  }
+  
+  const fileName = parts[parts.length - 1];
+  currentLevel[fileName] = { 
+    _type: 'file', 
+    file: file,
+    path: path
+  };
+}
+
+// Find the first Java file in the structure
+function findFirstJavaFile(structure) {
+  for (const key in structure) {
+    if (key === '_type') continue;
+    
+    if (structure[key]._type === 'file' && key.endsWith('.java')) {
+      return structure[key];
+    } else if (structure[key]._type === 'folder') {
+      const result = findFirstJavaFile(structure[key]);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+// Render the file tree in the sidebar
+function renderFileTree() {
+  const fileTreeElement = document.getElementById('fileTree');
+  fileTreeElement.innerHTML = '';
+  
+  if (Object.keys(fileStructure).length === 0) {
+    fileTreeElement.innerHTML = '<p class="text-muted p-2">No files uploaded</p>';
+    return;
+  }
+  
+  const tree = buildFileTreeHTML(fileStructure);
+  fileTreeElement.appendChild(tree);
+}
+
+// Build HTML for the file tree
+function buildFileTreeHTML(structure, level = 0) {
+  const ul = document.createElement('ul');
+  ul.style.paddingLeft = level > 0 ? '16px' : '0';
+  
+  for (const key in structure) {
+    if (key === '_type') continue;
+    
+    const li = document.createElement('li');
+    const item = structure[key];
+    
+    if (item._type === 'folder') {
+      li.innerHTML = `
+        <div class="folder" data-name="${key}">
+          <span class="folder-name">${key}</span>
+        </div>
+      `;
+      
+      // Add click event to toggle folder
+      li.querySelector('.folder').addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('expanded');
+        const children = this.nextElementSibling;
+        if (children) {
+          children.style.display = children.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+      
+      // Create children container (initially hidden)
+      const childrenContainer = buildFileTreeHTML(item, level + 1);
+      childrenContainer.style.display = 'none';
+      li.appendChild(childrenContainer);
+      
+    } else if (item._type === 'file' && key.endsWith('.java')) {
+      li.innerHTML = `
+        <div class="file java" data-path="${item.path}">
+          ${key}
+        </div>
+      `;
+      
+      // Add click event to load file content
+      li.querySelector('.file').addEventListener('click', function() {
+        readFileContent(item.file);
+        
+        // Highlight selected file
+        document.querySelectorAll('.file-tree .file').forEach(el => {
+          el.classList.remove('selected');
+        });
+        this.classList.add('selected');
+      });
+    }
+    
+    ul.appendChild(li);
+  }
+  
+  return ul;
+}
+
+// Read file content and set it in the editor
+function readFileContent(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const contents = e.target.result;
+    if (window.editor) {
+      window.editor.setValue(contents);
+      document.getElementById('hiddenCode').value = contents;
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Toggle sidebar visibility
+function toggleSidebar() {
+  const sidebar = document.getElementById('fileSidebar');
+  if (sidebar.style.display === 'none') {
+    sidebar.style.display = 'block';
+  } else {
+    sidebar.style.display = 'none';
+  }
+}
+
+// Refresh file tree
+function refreshFileTree() {
+  renderFileTree();
+}
+
+// Add this function to create comment tooltips
+function createCommentTooltip(comment) {
+    return `<div class="ast-comment-tooltip">
+        <div class="ast-comment-header">Comment</div>
+        <div class="ast-comment-content">${comment}</div>
+    </div>`;
+}
+
+// Add function to show comment tooltip
+function showCommentTooltip(comment, x, y) {
+    // Remove existing tooltip if any
+    d3.selectAll('.comment-tooltip').remove();
+    
+    // Create tooltip
+    const tooltip = d3.select('body')
+        .append('div')
+        .attr('class', 'comment-tooltip')
+        .style('position', 'absolute')
+        .style('left', `${x + 10}px`)
+        .style('top', `${y - 10}px`)
+        .style('background', '#fff')
+        .style('border', '1px solid #ccc')
+        .style('border-radius', '4px')
+        .style('padding', '8px')
+        .style('box-shadow', '0 2px 4px rgba(0,0,0,0.2)')
+        .style('max-width', '300px')
+        .style('z-index', '1000');
+    
+    // Add content
+    tooltip.append('div')
+        .attr('class', 'comment-tooltip-header')
+        .style('font-weight', 'bold')
+        .style('margin-bottom', '5px')
+        .text('Comment');
+    
+    tooltip.append('div')
+        .attr('class', 'comment-tooltip-content')
+        .text(comment);
+    
+    // Add close button
+    tooltip.append('button')
+        .attr('class', 'comment-tooltip-close')
+        .style('position', 'absolute')
+        .style('top', '5px')
+        .style('right', '5px')
+        .style('background', 'none')
+        .style('border', 'none')
+        .style('cursor', 'pointer')
+        .text('×')
+        .on('click', function() {
+            tooltip.remove();
+        });
+    
+    // Close tooltip when clicking outside
+    d3.select('body').on('click.comment-tooltip', function(event) {
+        if (!event.target.closest('.comment-tooltip')) {
+            tooltip.remove();
+            d3.select('body').on('click.comment-tooltip', null);
+        }
+    });
 }

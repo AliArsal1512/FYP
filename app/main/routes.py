@@ -256,3 +256,77 @@ def ast_json():
     code = request.json.get('code', '')
     ast_data = build_ast_json(code)
     return jsonify(ast_data)
+
+@main_bp.route('/process-folder', methods=['POST'])
+@login_required
+def process_folder():
+    try:
+        # Get the uploaded files
+        uploaded_files = request.files.getlist('files[]')
+        
+        if not uploaded_files:
+            return jsonify({"error": "No files uploaded"}), 400
+        
+        # Process each file
+        results = {}
+        for file in uploaded_files:
+            if file.filename.endswith('.java'):
+                code_content = file.read().decode('utf-8')
+                filename = file.filename
+                
+                # Process the code (similar to your home route)
+                try:
+                    # Your existing processing logic here
+                    ast_output = format_ast(code_content)
+                    
+                    # Extract classes and methods
+                    class_structure = extract_classes(code_content)
+                    method_structure = extract_methods(code_content)
+                    
+                    # Generate comments
+                    grouped_comments = {}
+                    for class_name, class_code in class_structure.items():
+                        processed_class = preprocess_code(class_code)
+                        if current_app.hf_pipeline:
+                            result = current_app.hf_pipeline(processed_class)
+                            comment = clean_comment(result[0]['generated_text'])
+                            grouped_comments[class_name] = {
+                                'class_comment': f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>',
+                                'method_comments': []
+                            }
+                    
+                    for class_name, methods in method_structure.items():
+                        if class_name not in grouped_comments:
+                            grouped_comments[class_name] = {'class_comment': '', 'method_comments': []}
+                        for method in methods:
+                            processed_method = preprocess_code(method['code'])
+                            if current_app.hf_pipeline:
+                                result = current_app.hf_pipeline(processed_method)
+                                comment = clean_comment(result[0]['generated_text'])
+                                grouped_comments[class_name]['method_comments'].append(
+                                    f'<div class="comment-method" id="method_{class_name}_{method["name"]}">◆ {class_name}.{method["name"]}:\n{comment}</div>'
+                                )
+                    
+                    comments_output_list = []
+                    for class_data in grouped_comments.values():
+                        if class_data['class_comment']: 
+                            comments_output_list.append(class_data['class_comment'])
+                        comments_output_list.extend(class_data['method_comments'])
+                    comments_output = '\n'.join(comments_output_list) if comments_output_list else "No comments generated"
+                    
+                    # Store results for this file
+                    results[filename] = {
+                        'ast': ast_output,
+                        'comments': comments_output,
+                        'code': code_content
+                    }
+                    
+                except Exception as e:
+                    results[filename] = {
+                        'error': str(e)
+                    }
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
