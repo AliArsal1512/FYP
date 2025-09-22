@@ -330,3 +330,7 @@ def process_folder():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@main_bp.route("/model")
+def model_page():
+    return render_template("model.html")

@@ -5,18 +5,18 @@ html {
 
 body{
   background-color: rgb(255, 255, 255);
-  color: rgb(80, 80, 80);
+  color: rgb(36, 36, 36);
+  font-family: "Gill Sans", sans-serif;
 }
-
 
 /*components styling*/
 .clarifai-btn{
-  background-color: #444cde;
+  background-color: #3b6cff;
   color: white;
-  padding: 15px 20px;
+  padding: 10px 15px;
   margin-top: 20px;
   border: none;
-  border-radius: 30px;
+  border-radius: 10px;
   cursor: pointer;
   position: relative;
   transition: background-color 0.3s ease;
@@ -25,455 +25,22 @@ body{
 }
 
 .clarifai-btn:hover {
-  background-color: #dd0058; /* Dark purple */
+  background-color: #002eb7; /* Dark purple */
+  color: white !important;
 }
 
-.text-clarifai{
-  background: linear-gradient(to right, #dd0000, #2c00de);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: bold;
-}
-
-
-.hero-content {
-  opacity: 0;
-  transform: translateY(30px);
-  animation: fadeSlideUp 1s ease-out forwards;
-  animation-delay: 0.3s; /* Wait a bit after load */
-}
-
-@keyframes fadeSlideUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.login-page, .signup-page {
-  height: 100vh;
-  background : url(../images/body-bg2.jpg);
-  background-size: cover;    /* Make it fill the section */
-  background-position: center; /* Center the image */
-  color: rgb(45, 45, 45);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-
-/*NavBar Styling*/
-#mainNavbar {
-  padding: 15px 0;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-#mainNavbar.navbar-shrink {
-  padding: 10px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-
-.navbar-shrink #logo {
-  height: 40px;
-}
-
-.nav-link {
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
-}
-
-.navbar-shrink .nav-link {
-  font-size: 1rem;
-}
-
-@media (max-width: 991.98px) {
-  #mainNavbar {
-    padding: 15px 0;
-  }
-  .navbar-shrink {
-    padding: 10px 0 !important;
-  }
-}
-
-.navbar-brand{
-  background: linear-gradient(to right, #dd0058, #6b00de);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: bold;
-  font-size: 1.8rem;
-  margin-left: 20px;
-  margin-right: 20px;
-  transition: all 0.3s ease;
-}
-
-.navbar-shrink .navbar-brand {
-  font-size: 1.5rem; /* Reduced font size */
-  margin-left: 15px;
-  margin-right: 15px;
-}
-
-/* Main Section Styling */
-
-.main-section {
-  scroll-margin-top: 50px; /* Match your navbar height */
-}
-
-.welcome-text{
-  margin-top: 35px;
-}
-
-.welcome-text h2{
-  font-size: 3rem;
-}
-
-.welcome-text h3{
-  font-size: 2.5rem;
-}
-
-.welcome-text p{
-  font-size: 1.4rem;
-  margin-top: 20px;
-  line-height: 45px;
-  
-}
-
-/*Monaco-specific styling */
-#editorContainer {
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-/* Fix Monaco font */
-.monaco-editor {
-  font-family: 'Fira Code', monospace !important;
-}
-
-/* Optional: Add custom scrollbar */
-.monaco-scrollable-element > .scrollbar > .slider {
-  background: rgba(121, 121, 121, 0.4) !important;
-}
-
-/* Output Containers Styling */
-/* Original Output Styles */
-
-.form-control {
-  background-color: #ffffff !important;
-  color: rgb(80, 80, 80) !important;
-  border: 1px solid #d9d9d9 !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
-  margin-bottom: 30px;
-}
-
-.form-label{
-  color: rgb(80, 80, 80) !important;
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 15px;
-}
-
-.auto-resize {
-  min-height: 300px;
-  resize: none;
-}
-
-/* Loading Overlay */
-.loading-overlay {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #ecefff;
-  opacity: 0.7;
-  z-index: 100;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-.loading-text {
-  margin-top: 10px;
-  color: #6262a0;
-}
-
-
-
-
-/* AST Specific Styles */
-.ast-output, .comments-output {
-  height: auto !important;
-  min-height: 300px;
-  max-height: 600px; /* Optional max height for very large content */
-}
-
-@media (min-width: 992px) {
-  .col-lg-6 {
-    flex: 0 0 50%;
-    max-width: 50%;
-    height: 600px; /* Add fixed height */
-    overflow: hidden; /* Contain content */
-  }
-}
-
-/* Add mobile responsiveness */
-@media (max-width: 991.98px) {
-  .col-lg-6 {
-    height: auto !important;
-    min-height: 300px;
-  }
-}
-
-/* Ensure textareas remain visible */
-.comments-output, .ast-output {
-  height: 100% !important; /* Fill parent height */
-  min-height: 300px;
-  overflow: auto !important;
-  resize: none; /* Disable manual resize */
-}
-
-.loading #commentsOutput,
-.loading #astOutput {
-  opacity: 0.3;
-}
-
-/* Change spinner color */
-.loading-overlay .spinner-border {
-    color: #dd0058; /* Your accent color */
-}
-
-/* Change overlay background */
-.loading-overlay {
-  top: 0; /* Was 40px - fix positioning */
-  bottom: 0;
-  border-radius: 0; /* Remove border radius */
-}
-.ast-class, .ast-method {
-  display: block;
-  width: fit-content; /* Prevent horizontal expansion */
-  max-width: 100%;
-  margin: 2px 0;
-  padding: 3px 8px;
-  box-sizing: border-box;
+.clarifai-btn:active {
+  opacity: 0.2;
   transition: 0.3s ease;
 }
 
-/* Comment items */
-.ast-tree, .comment-class, .comment-method {
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-
-.ast-class.active-parent {
-  border-left: 3px solid #dd0058;
-  background: rgba(221, 0, 88, 0.1);
-  /* No size change */
-  padding-left: 5px;
-  margin-left: -5px;
-}
-
-.row.g-4 {
-  margin-top: 1rem;
-  padding: 0 15px; /* Prevent horizontal overflow */
-}
-
-/* Highlight matching AST nodes */
-.ast-class.active, .ast-method.active {
-  background: rgba(221, 0, 88, 0.25);
-  border-radius: 4px;
-}
-
-/* AST Highlighting */
-.ast-class.active,
-.ast-method.active {
-    background: rgba(221, 0, 88, 0.25) !important;
-    position: relative;
-    z-index: 1;
-    /* Instead of scaling, use border and shadow */
-    border: 2px solid #dd0058;
-    box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
-    /* Maintain original size */
-    transform: none;
-    margin: -2px; /* Compensate for border */
-}
-
-.ast-class.active-parent {
-  border-left: 3px solid #dd0058;
-  background: rgba(221, 0, 88, 0.1);
-  /* No size change */
-  padding-left: 5px;
-  margin-left: -5px;
-}
-
-.ast-error, .comment-error {
-  color: #dc3545 ;
-  padding: 15px;
-  background: rgba(220, 53, 69, 0.1) ;
-  border: 2px solid #dc3545 ;
-  border-radius: 4px;
-  margin: 10px 0;
-  white-space: pre-wrap;
-  font-family: monospace;
-}
-
-
-.error-line {
-  font-weight: bold;
-  color: #8b0000;
-  text-decoration: underline;
-}
-
-
-/* Submission items styling */
-.submission-item {
-  transition: all 0.3s ease;
-  background-color: #ecefff;
-  border-left: 3px solid transparent;
-}
-
-.submission-item:hover {
-  border-left-color: #dd0058;
-  transform: translateX(3px);
-}
-
-.submission-name-display {
-  font-weight: medium;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 150px;
-}
-
-.submission-name {
-  font-size: 0.9rem;
-  padding: 0.25rem 0.5rem;
-}
-
-/* Button styles */
-.btn-group .btn {
-  border-radius: 4px;
-  margin-left: 3px;
-}
-
-.edit-name-btn {
-  width: 38px;
-}
-
-.preview-btn {
-  font-size: 0.85rem;
-}
-
-/* Preview container */
-#previewEditor {
-  height: 500px !important;
-  width: 100%;
-  transition: opacity 0.3s ease;
-}
-
-#previewLoading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(233, 237, 255, 0.7);
-  z-index: 100;
-}
-
-#previewError {
-  margin-bottom: 0;
-}
-
-/* Card styling */
-.card {
-  border: none;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.card-header {
-  background: linear-gradient(to right, #444cde, #6b00de) !important;
-  border: none;
-  padding: 12px 20px;
-}
-
-/* Make sure the Monaco editor container has the right z-index */
-.monaco-editor {
-  z-index: 1;
-}
-
-.card-body {
-  padding : 30px;
-  background-color: #ffffff;
-}
-
-.login-label{
-  margin-bottom: 40px !important;
-  font-size: 2.5rem ;
-}
-
-/* CFG output styling */
-#cfgOutput img {
-    max-width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 5px;
-    background: white;
-}
-
-/* Zoom controls */
-.btn-group {
-    margin-left: 10px;
-}
-
-/* CFG Container Styles */
-#cfgContainer {
-    touch-action: none; /* Prevent touch scrolling on mobile */
-    cursor: grab;
-}
-
-#cfgContainer:active {
-    cursor: grabbing;
-}
-
-#cfgImageWrapper {
-    transition: transform 0.1s ease-out;
-}
-
-#cfgImage {
-    pointer-events: none; /* Prevent image from interfering with drag */
-}
-
-
-/* Enable smooth scroll behavior */
-html {
-  scroll-behavior: smooth;
-}
-
-
-/*components styling*/
-.clarifai-btn{
-  background-color: #444cde;
+.zoom-btn{
+  background-color: #b65c80;
   color: white;
-  padding: 15px 20px;
+  padding: 10px 15px;
   margin-top: 20px;
   border: none;
-  border-radius: 30px;
+  border-radius: 10px;
   cursor: pointer;
   position: relative;
   transition: background-color 0.3s ease;
@@ -481,12 +48,12 @@ html {
   font-weight: bold;
 }
 
-.clarifai-btn:hover {
-  background-color: #dd0058; /* Dark purple */
+.zoom-btn:hover {
+  background-color: #802248; /* Dark purple */
 }
 
 .text-clarifai{
-  background: linear-gradient(to right, #dd0058, #6b00de);
+  background: linear-gradient(to right, #ff0000, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -496,13 +63,12 @@ html {
 /* Hero Section Styling */
 .hero-section{
   height: 100vh;
-  background : url(../images/body-bg2.jpg);
+  background : url(../images/body-bg9.png);
   background-size: cover;    /* Make it fill the section */
   background-position: center; /* Center the image */
-  color: white;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  padding-top: 20px;
   align-items: center;
   text-align: center;
 }
@@ -510,20 +76,10 @@ html {
 .hero-section h1 {
   font-size: 7rem;
   font-weight: bold;
-  background: linear-gradient(to right, #dd0058, #6b00de);
+  background: linear-gradient(to right, #ff0000, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-.hero-section p {
-  font-size: 1.7rem;
-  margin-bottom: 60px;
-  background: linear-gradient(to right, #dd0058, #6b00de);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: bold;
 }
 
 .hero-content {
@@ -533,25 +89,6 @@ html {
   animation-delay: 0.3s; /* Wait a bit after load */
 }
 
-.clarifai-text-main h1 {
-  font-size: 7rem;
-  margin-top: 20px;
-  font-weight: bold;
-  background: linear-gradient(to right, #dd0058, #6b00de);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.clarifai-text-main p {
-  font-size: 1.7rem;
-  background: linear-gradient(to right, #dd0058, #6b00de);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: bold;
-}
-
 @keyframes fadeSlideUp {
   to {
     opacity: 1;
@@ -559,28 +96,33 @@ html {
   }
 }
 
-.login-page, .signup-page {
-  height: 100vh;
-  background : url(../images/body-bg2.jpg);
-  background-size: cover;    /* Make it fill the section */
-  background-position: center; /* Center the image */
-  color: rgb(45, 45, 45);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+.clarifai-text-main h1 {
+  font-size: 7rem;
+  margin-top: 20px;
+  font-weight: bold;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.clarifai-text-main p {
+  font-size: 1.7rem;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
 }
 
 .get-started-btn {
-  background-color: #444cde;
+  background-color: #3b6cff;
   color: white;
-  padding: 18px 30px;
+  padding: 14px 30px;
   border: none;
-  border-radius: 30px;
+  border-radius: 10px;
   font-size: 1.35rem;
   cursor: pointer;
-  position: relative;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
   font-weight: bold;
@@ -591,7 +133,7 @@ html {
 }
 
 .get-started-btn:hover {
-  background-color: #dd0058; /* Dark purple */
+  background-color: #c60303; /* Dark purple */
 }
 
 /* Arrow styling */
@@ -601,7 +143,7 @@ html {
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 15px;
+  margin-top: 10px;
   width: 0;
   height: 0;
   border-left: 20px solid transparent;
@@ -614,25 +156,37 @@ html {
 /* On hover, show the arrow */
 .get-started-btn:hover::after {
   opacity: 1;
-  margin-top: 25px; /* Increase the space for the larger arrow */
-  border-top-color: #dd0058; /* Change the arrow color to match the new background */
+  margin-top: 20px; /* Increase the space for the larger arrow */
+  border-top-color: #ff0000; /* Change the arrow color to match the new background */
+}
+
+.login-page, .signup-page {
+  height: 100vh;
+  background : url(../images/body-bg9.jpg);
+  background-size: cover;    /* Make it fill the section */
+  background-position: center; /* Center the image */
+  color: rgb(45, 45, 45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 /*NavBar Styling*/
 #mainNavbar {
-  padding: 15px 0;
+  padding: 2px 0;
   transition: all 0.3s ease;
   /* Transparent background with blur */
-  background: rgba(255, 255, 255, 0.2); /* white with 20% opacity */
+  background: rgba(255, 255, 255, 0.2) !important; /* white with 20% opacity */
   backdrop-filter: blur(10px);           /* frosted glass blur */
   -webkit-backdrop-filter: blur(10px);   /* Safari support */
 }
 
 #mainNavbar.navbar-shrink {
-  padding: 10px 0;
+  padding: 2px 0;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-
 
 .navbar-shrink #logo {
   height: 40px;
@@ -657,7 +211,7 @@ html {
 }
 
 .navbar-brand{
-  background: linear-gradient(to right, #dd0058, #6b00de);
+  background: linear-gradient(to right, #ff0000, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -675,13 +229,15 @@ html {
 }
 
 /* Main Section Styling */
-
 .main-section {
   scroll-margin-top: 50px; /* Match your navbar height */
 }
 
 .welcome-text{
-  margin-top: 35px;
+  margin-top: 6rem;
+  margin-bottom: 4rem;
+  text-align: left;
+  padding-left: 30px;
 }
 
 .welcome-text h2{
@@ -693,25 +249,32 @@ html {
 }
 
 .welcome-text p{
-  font-size: 1.4rem;
-  margin-top: 20px;
-  line-height: 45px;
-  
+  font-size: 1.5rem;
+  margin-top: 25px;
 }
 
+.welcome-text .punch-line{
+  font-size: 2rem;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 8px;
+  line-height: 35px;
+}
 
-
+/* Form Styling */
 .code-form {
   background-color: #e7e7e7;
   padding: 20px;
-  color: rgb(80, 80, 80);
+  color: rgb(37, 37, 37);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   margin-top: 10px;
 }
 
 .code-form label {
-  color: rgb(80, 80, 80);
+  color: rgb(37, 37, 37);
   margin-bottom: 10px;
   font-size: 1.5rem;
   font-weight: bold;
@@ -726,9 +289,35 @@ html {
   background-color: #181923;
   color: whitesmoke;
 }
+
 .code-form textarea::placeholder{
   color: rgb(113, 113, 113);
-  
+}
+
+.form-control {
+  background-color: #ffffff !important;
+  color: rgb(37, 37, 37);
+  border: 1px solid #d9d9d9 !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.form-label{
+  color: rgb(37, 37, 37) !important;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.auto-resize {
+  min-height: 300px;
+  resize: none;
+}
+
+.login-label{
+  margin-bottom: 40px !important;
+  font-size: 2.5rem ;
 }
 
 /*Monaco-specific styling */
@@ -741,14 +330,13 @@ html {
 /* Fix Monaco font */
 .monaco-editor {
   font-family: 'Fira Code', monospace !important;
+  z-index: 1;
 }
 
 /* Optional: Add custom scrollbar */
 .monaco-scrollable-element > .scrollbar > .slider {
   background: rgba(121, 121, 121, 0.4) !important;
 }
-
-
 
 /* Loading Overlay */
 .loading-overlay {
@@ -764,7 +352,7 @@ html {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .loading-text {
@@ -772,8 +360,26 @@ html {
   color: #6262a0;
 }
 
+/* Change spinner color */
+.loading-overlay .spinner-border {
+    color: #ff0000; /* Your accent color */
+}
 
+.loading #commentsOutput,
+.loading #astOutput {
+  opacity: 0.3;
+}
 
+/* Output Containers Styling */
+.output-container{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.cfg-section{
+  grid-column: span 2;
+}
 
 /* AST Specific Styles */
 .ast-output, .comments-output {
@@ -807,22 +413,6 @@ html {
   resize: none; /* Disable manual resize */
 }
 
-.loading #commentsOutput,
-.loading #astOutput {
-  opacity: 0.3;
-}
-
-/* Change spinner color */
-.loading-overlay .spinner-border {
-    color: #dd0058; /* Your accent color */
-}
-
-/* Change overlay background */
-.loading-overlay {
-  top: 0; /* Was 40px - fix positioning */
-  bottom: 0;
-  border-radius: 0; /* Remove border radius */
-}
 .ast-class, .ast-method {
   display: block;
   width: fit-content; /* Prevent horizontal expansion */
@@ -840,41 +430,25 @@ html {
   overflow-wrap: anywhere;
 }
 
-.ast-class.active-parent {
-  border-left: 3px solid #dd0058;
-  background: rgba(221, 0, 88, 0.1);
-  /* No size change */
-  padding-left: 5px;
-  margin-left: -5px;
-}
-
 .row.g-4 {
   margin-top: 1rem;
   padding: 0 15px; /* Prevent horizontal overflow */
 }
 
-/* Highlight matching AST nodes */
-.ast-class.active, .ast-method.active {
-  background: rgba(221, 0, 88, 0.25);
-  border-radius: 4px;
-}
-
 /* AST Highlighting */
-.ast-class.active,
-.ast-method.active {
-    background: rgba(221, 0, 88, 0.25) !important;
-    position: relative;
-    z-index: 1;
-    /* Instead of scaling, use border and shadow */
-    border: 2px solid #dd0058;
-    box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
-    /* Maintain original size */
-    transform: none;
-    margin: -2px; /* Compensate for border */
+.ast-class.active, .ast-method.active {
+  background: rgba(221, 0, 88, 0.25) !important;
+  position: relative;
+  z-index: 1;
+  border: 2px solid #ff0000;
+  box-shadow: 0 0 10px rgba(221, 0, 88, 0.3);
+  border-radius: 4px;
+  transform: none;
+  margin: -2px; /* Compensate for border */
 }
 
 .ast-class.active-parent {
-  border-left: 3px solid #dd0058;
+  border-left: 3px solid #ff0000;
   background: rgba(221, 0, 88, 0.1);
   /* No size change */
   padding-left: 5px;
@@ -882,16 +456,15 @@ html {
 }
 
 .ast-error, .comment-error {
-  color: #dc3545 ;
+  color: #ff0000 ;
   padding: 15px;
   background: rgba(220, 53, 69, 0.1) ;
-  border: 2px solid #dc3545 ;
+  border: 2px solid #ff0000 ;
   border-radius: 4px;
   margin: 10px 0;
   white-space: pre-wrap;
   font-family: monospace;
 }
-
 
 .error-line {
   font-weight: bold;
@@ -899,13 +472,11 @@ html {
   text-decoration: underline;
 }
 
-
 /*Upload File Button Styling */
-
 .code-form .btn-sm {
   padding: 8px 15px;
   font-size: 0.9rem;
-  border-radius: 20px;
+  border-radius: 10px;
 }
 
 .code-form input[type="file"] + label {
@@ -919,7 +490,6 @@ html {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-
 /* Submission items styling */
 .submission-item {
   transition: all 0.3s ease;
@@ -928,7 +498,7 @@ html {
 }
 
 .submission-item:hover {
-  border-left-color: #dd0058;
+  border-left-color: #ff0000;
   transform: translateX(3px);
 }
 
@@ -992,25 +562,21 @@ html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.card-header {
-  background: linear-gradient(to right, #444cde, #6b00de) !important;
+.card-header-red {
+  background: #ff0000 !important;
   border: none;
   padding: 12px 20px;
 }
 
-/* Make sure the Monaco editor container has the right z-index */
-.monaco-editor {
-  z-index: 1;
+.card-header-blue {
+  background: #3b6cff !important;
+  border: none;
+  padding: 12px 20px;
 }
 
 .card-body {
   padding : 30px;
   background-color: #ffffff;
-}
-
-.login-label{
-  margin-bottom: 40px !important;
-  font-size: 2.5rem ;
 }
 
 /* CFG output styling */
@@ -1020,11 +586,6 @@ html {
     border-radius: 4px;
     padding: 5px;
     background: white;
-}
-
-/* Zoom controls */
-.btn-group {
-    margin-left: 10px;
 }
 
 /* CFG Container Styles */
@@ -1045,8 +606,7 @@ html {
     pointer-events: none; /* Prevent image from interfering with drag */
 }
 
-
-/* styles.css */
+/* AST Tree D3 Styles */
 .link {
     fill: none;
     stroke: #ccc;
@@ -1083,27 +643,7 @@ html {
     font-size: 12px;
     font-weight: bold;
     text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
-}
-
-#astTreeContainer {
-    display: none;
-    border: 1px solid #ddd;
-    background-color: white;
-    overflow: hidden;
-}
-
-/* For vertical tree */
-.node text {
-    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
     dominant-baseline: middle;
-}
-
-.ast-node-text {
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: bold;
-    dominant-baseline: middle;
-    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
 }
 
 .ast-node-text tspan {
@@ -1126,12 +666,169 @@ html {
     stroke: #ff9900;
 }
 
-.output-container{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+/* For vertical tree */
+.node text {
+    text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    dominant-baseline: middle;
 }
 
-.cfg-section{
-  grid-column: span 2;
+/* Sidebar Styles */
+.file-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #dee2e6;
+  height: calc(100vh - 76px);
+  overflow-y: auto;
+  position: fixed;
+  top: 76px;
+  transition: all 0.3s ease;
+  z-index: 60;
+}
+
+.sidebar-header {
+  border-bottom: 1px solid #dee2e6;
+  background-color: #e9ecef;
+}
+
+.file-tree {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.file-tree ul {
+  list-style-type: none;
+  padding-left: 16px;
+}
+
+.file-tree li {
+  margin: 4px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-tree li:hover {
+  background-color: #e9ecef;
+}
+
+.file-tree .folder::before {
+  content: '📁 ';
+  margin-right: 4px;
+}
+
+.file-tree .file::before {
+  content: '📄 ';
+  margin-right: 4px;
+}
+
+.file-tree .folder.expanded::before {
+  content: '📂 ';
+}
+
+.file-tree .file.java::before {
+  content: '☕ ';
+}
+
+/* Toggle button for sidebar */
+#toggleSidebar {
+  display: none; /* Initially hidden on mobile */
+  position: fixed;
+  top: 90px;
+  left: 10px;
+  z-index : 50;
+}
+
+@media (min-width: 992px) {
+  #toggleSidebar {
+    display: inline-block;
+  }
+}
+
+.ast-comment-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-width: 300px;
+    z-index: 1000;
+}
+
+.ast-comment-header {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #3b6cff;
+}
+
+.ast-comment-content {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.comment-indicator {
+    cursor: pointer;
+}
+
+.comment-indicator:hover {
+    fill: #ff6600;
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+/* Comment tooltip styles */
+.comment-tooltip {
+    position: absolute;
+    background: white;
+    border: 1px solid #3b6cff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(59, 108, 255, 0.2);
+    max-width: 300px;
+    z-index: 1000;
+    font-family: 'Gill Sans', sans-serif;
+}
+
+.comment-tooltip-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #3b6cff;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.comment-tooltip-content {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.comment-tooltip-close {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #999;
+}
+
+.comment-tooltip-close:hover {
+    color: #ff0000;
+}
+
+/* Comment indicator for AST nodes */
+.comment-indicator {
+    cursor: pointer;
+    fill: #ff9900;
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+.comment-indicator:hover {
+    fill: #ff6600;
+    stroke-width: 2px;
 }

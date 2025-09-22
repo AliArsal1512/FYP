@@ -59,8 +59,8 @@
                   Models
                 </a>
                 <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="{{ url_for('main.home') }}#main-section">Comment Generator</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('main.home') }}#main-section">AST Generator</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('main.model_page') }}">Comment Generator</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('main.model_page') }}">AST Generator</a></li>
                 </ul>
               </li>
               <li class="nav-item">
@@ -75,11 +75,10 @@
       </nav>
 
       <!-- Dashboard Content -->
-      <section class="dashboard-section" style="margin-top: 80px; padding: 20px;">
+      <section class="dashboard-section">
         <div class="welcome-text align-self-start mb-4">
           <h2>Welcome, <span class="text-clarifai">{{ username }}</span></h2>
-          <div class="welcome-text align-self-start mb-4">
-            <h3>This is your Dashboard.</h3>
+          <div class="align-self-start mb-4">
             <p>View and manage your code submissions.</p>
           </div>
         </div>

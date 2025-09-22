@@ -28,6 +28,25 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('#mainNavbar').classList.add('navbar-shrink');
   }
 
+  // Animate How It Works section when in view
+  const howSection = document.getElementById('how-it-works');
+  if (howSection) {
+    // Add reveal classes to elements
+    howSection.querySelectorAll('.card, .col-12.text-center, .how-divider').forEach(el => {
+      el.classList.add('reveal');
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal-visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    howSection.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  }
+
   // Only run dashboard code if we're on the dashboard page
   if (document.querySelector('.dashboard-section')) {
     initDashboard();
@@ -955,7 +974,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   if (document.getElementById('closeSidebar')) {
-    document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
+    document.getElementById('closeSidebar').addEventListener('click', closeSidebar);
+  }
+  
+  if (document.getElementById('sidebarBackdrop')) {
+    document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
   }
   
   if (document.getElementById('refreshFileTree')) {
@@ -1112,14 +1135,27 @@ function readFileContent(file) {
   reader.readAsText(file);
 }
 
-// Toggle sidebar visibility
+// Toggle sidebar visibility with smooth animation
 function toggleSidebar() {
   const sidebar = document.getElementById('fileSidebar');
-  if (sidebar.style.display === 'none') {
-    sidebar.style.display = 'block';
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  if (sidebar.classList.contains('open')) {
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('show');
   } else {
-    sidebar.style.display = 'none';
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('show');
   }
+}
+
+// Close sidebar when clicking backdrop
+function closeSidebar() {
+  const sidebar = document.getElementById('fileSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('show');
 }
 
 // Refresh file tree
