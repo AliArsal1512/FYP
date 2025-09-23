@@ -6,14 +6,14 @@ html {
 body{
   background-color: rgb(255, 255, 255);
   color: rgb(36, 36, 36);
-  font-family: "Gill Sans", sans-serif;
+  font-family: 'Lexend', sans-serif;
 }
 
 /*components styling*/
 .clarifai-btn{
   background-color: #3b6cff;
   color: white !important;
-  padding: 10px 15px;
+  padding: 8px 13px;
   margin-top: 20px;
   border: none;
   border-radius: 10px;
@@ -21,7 +21,12 @@ body{
   position: relative;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
-  font-weight: bold;
+  font-weight: normal !important;
+}
+
+.dashboard-section{
+  padding: 2rem;
+  padding-top: 80px;
 }
 
 .clarifai-btn:hover {
@@ -58,19 +63,29 @@ body{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
+  
+}
+
+.text-gradient{
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Hero Section Styling */
 .hero-section{
-  height: 100vh;
+  min-height: 100vh;
   background : url(../images/body-bg9.png);
   background-size: cover;    /* Make it fill the section */
   background-position: center; /* Center the image */
   display: flex;
   flex-direction: column;
   padding-top: 20px;
-  align-items: center;
+  align-items: start;
   text-align: center;
+  padding: 5%;
 }
 
 .hero-section h1 {
@@ -87,6 +102,7 @@ body{
   transform: translateY(30px);
   animation: fadeSlideUp 1s ease-out forwards;
   animation-delay: 0.3s; /* Wait a bit after load */
+  max-width: 700px;
 }
 
 @keyframes fadeSlideUp {
@@ -116,9 +132,10 @@ body{
 }
 
 .hero-buttons {
-  margin-top: 30px;
   display: flex;
+  margin-top: 20px;
   gap: 20px;
+  align-self: center;
   justify-content: center;
   flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
@@ -126,7 +143,7 @@ body{
 .how-btn {
   background-color: #0000001a;
   color: white;
-  padding: 14px 30px;
+  padding: 10px 16px;
   box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
   border: none;
   border-radius: 10px;
@@ -134,7 +151,7 @@ body{
   cursor: pointer;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
-  font-weight: bold;
+  font-weight: normal;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeSlideUp 1s ease-out forwards;
@@ -159,27 +176,27 @@ body{
   border-right: 20px solid transparent;
   border-top: 24px solid #3c011d7e; /* Arrow color */
   opacity: 0;
-  transition: opacity 0.3s ease, margin-top 0.3s ease;
+  transition: opacity 0.3s ease, margin-top 0.5s ease;
 }
 
 /* On hover, show the arrow */
 .how-btn:hover::after {
   opacity: 1;
-  margin-top: 20px; /* Increase the space for the larger arrow */
+  margin-top: 15px; /* Increase the space for the larger arrow */
   border-top-color: #ff00008e; /* Change the arrow color to match the new background */
 }
 
 .try-btn {
   background-color: #3b6cff;
   color: white;
-  padding: 14px 30px;
+  padding: 10px 16px;
   border: none;
   border-radius: 10px;
   font-size: 1.35rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
-  font-weight: bold;
+  font-weight: normal;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeSlideUp 1s ease-out forwards;
@@ -193,7 +210,7 @@ body{
 
 .login-page, .signup-page {
   height: 100vh;
-  background : url(../images/body-bg9.jpg);
+  background : url(../images/body-bg9.png);
   background-size: cover;    /* Make it fill the section */
   background-position: center; /* Center the image */
   color: rgb(45, 45, 45);
@@ -202,6 +219,12 @@ body{
   justify-content: center;
   align-items: center;
   text-align: center;
+}
+
+.log-sign-card{
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(248,249,255,1) 0%, rgba(255,255,255,1) 100%) padding-box,
+              linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
 }
 
 /*NavBar Styling*/
@@ -234,10 +257,10 @@ body{
 
 @media (max-width: 991.98px) {
   #mainNavbar {
-    padding: 15px 0;
+    padding: 8px 0;
   }
   .navbar-shrink {
-    padding: 10px 0 !important;
+    padding: 4px 0 !important;
   }
 }
 
@@ -247,6 +270,7 @@ body{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
   font-size: 1.8rem;
   margin-left: 20px;
   margin-right: 20px;
@@ -261,14 +285,22 @@ body{
 
 /* Model Section Styling */
 .model-section {
-  padding-top:70px /* Match your navbar height */
+  padding-top:70px; /* Match your navbar height */
+}
+
+.hero-divider{
+  margin-top: 4rem;
+  display: flex;
+  display: block;
+}
+
+.hero-divider h2{
+  font-size: 4rem;
+  color: rgba(154, 24, 24, 0.808);
 }
 
 .welcome-text{
-  margin-top: 6rem;
-  margin-bottom: 4rem;
   text-align: left;
-  padding-left: 30px;
 }
 
 .welcome-text h2{
@@ -291,8 +323,9 @@ body{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-top: 8px;
-  line-height: 35px;
 }
+
+
 
 /* Form Styling */
 .code-form {
@@ -457,6 +490,7 @@ body{
 /* Comment items */
 .ast-tree, .comment-class, .comment-method {
   white-space: pre-wrap;
+  color: black;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -842,14 +876,15 @@ body{
 /* How It Works Section */
 #how-it-works {
   position: relative;
+  padding-top: 5.5rem;
+  min-height: 100vh;
   background: linear-gradient(180deg, rgba(248,249,255,0.9) 0%, rgba(255,255,255,0.95) 60%),
-              url('../images/body-bg10.png');
+              url('../images/body-bg2.jpg');
   background-size: cover;
   background-position: center;
 }
 
 #how-it-works h3 {
-  font-weight: 800;
   font-size: 3rem;
   letter-spacing: 0.3px;
   background: linear-gradient(to right, #ff0000, #3b6cff);

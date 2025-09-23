@@ -213,7 +213,10 @@ let astData = null;
 let isGraphicalView = false;
 
 // Add inside initEditor function
-document.getElementById('switchViewBtn').addEventListener('click', toggleAstView);
+const switchViewBtn = document.getElementById('switchViewBtn');
+if (switchViewBtn) {
+    switchViewBtn.addEventListener('click', toggleAstView);
+}
 
 function toggleAstView() {
     isGraphicalView = !isGraphicalView;
