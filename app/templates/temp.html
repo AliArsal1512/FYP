@@ -18,58 +18,7 @@
     </section>
     <div class="container-fluid" style="max-width: 1400px; width: 100%;"> 
       <!-- NavBar -->
-      <nav class="navbar navbar-expand-lg bg-body-tertiary shadow custom-navbar fixed-top" data-bs-theme="light" id="mainNavbar">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#hero-section">ClarifAI</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-              </li>
-              {% if current_user.is_authenticated %}
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Account
-                  </a>
-                  <ul class="dropdown-menu">
-                    <li class="nav-item">
-                      <a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a>
-                    </li>
-                    <li class="nav-item">
-                      <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a>
-                    </li>
-                  </ul>
-                </li>
-              {% else %}
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
-                </li>
-              {% endif %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Models
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="#main-section">Comment Generator</a></li>
-                  <li><a class="dropdown-item" href="#main-section">AST Generator</a></li>
-                </ul>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Info</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">About Us</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+      {% include 'components/navbar.html' %}
         <!-- Main Section -->
       <section class="main-section" id="main-section">
         <div class="d-flex flex-column align-items-center p-4">

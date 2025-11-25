@@ -14,58 +14,7 @@
 <body>
     <div class="container-fluid" style="max-width: 1400px; width: 100%;"> 
       <!-- NavBar -->
-      <nav class="navbar navbar-expand-lg bg-body-tertiary shadow custom-navbar fixed-top" data-bs-theme="light" id="mainNavbar">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#hero-section">Clarifai</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-              </li>
-              {% if current_user.is_authenticated %}
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Account
-                  </a>
-                  <ul class="dropdown-menu">
-                    <li class="nav-item">
-                      <a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a>
-                    </li>
-                    <li class="nav-item">
-                      <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Logout</a>
-                    </li>
-                  </ul>
-                </li>
-              {% else %}
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
-                </li>
-              {% endif %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Models
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="{{ url_for('main.model_page') }}">Comment Generator</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('main.model_page') }}">AST Generator</a></li>
-                </ul>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Info</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">About Us</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+      {% include 'components/navbar.html' %}
       
       <!-- Main Section with Sidebar -->
       <section class="model-section" id="model-section">
@@ -130,15 +79,21 @@
       
       <!-- Output Section -->
       <section class="output-section" id="output-section">
-        <div class="d-flex justify-content-between mb-3">
-          <button id="switchViewBtn" class="btn btn-sm clarifai-btn">Switch to Graphical View</button>
-          <button id="showAllBtn" class="clarifai-btn btn btn-sm">Show All Comments</button>
-        </div>
         <div class="container-fluid code-form" style="margin-bottom: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
           <div class="output-container">
             <!-- AST Column -->
             <div class="ast-section d-flex flex-column position-relative">
-              <label class="form-label">Generated AST</label>
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <label class="form-label mb-0">Generated AST</label>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <button id="downloadAstBtn" class="btn btn-sm clarifai-btn" disabled>
+                    <i class="bi bi-download me-1"></i>Download AST
+                  </button>
+                  <button id="switchViewBtn" class="btn btn-sm clarifai-btn">
+                    Switch to Graphical View
+                  </button>
+                </div>
+              </div>
               <div id="astLoading" class="loading-overlay">
                 <div class="spinner-border text-primary" role="status"></div>
                 <span class="loading-text">Generating AST...</span>
@@ -153,7 +108,10 @@
             </div>
             <!-- Comments Column -->
             <div class="comments-section d-flex flex-column position-relative">
-              <label class="form-label">Generated Comments</label>
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <label class="form-label mb-0">Generated Comments</label>
+                <button id="showAllBtn" class="clarifai-btn btn btn-sm">Show All Comments</button>
+              </div>
               <div id="commentsLoading" class="loading-overlay">
                 <div class="spinner-border text-primary" role="status"></div>
                 <span class="loading-text">Generating comments...</span>
@@ -167,21 +125,28 @@
             </div>
             <!-- CFG Section -->
             <div class="cfg-section col-lg-12 d-flex flex-column position-relative">
-                <label class="form-label">Control Flow Graph</label>
-                <div class="d-flex justify-content-between mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <label class="form-label mb-0">Control Flow Graph</label>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <button id="generateCfgBtn" class="btn btn-sm clarifai-btn">
                         Generate CFG
                     </button>
-                    <div class="btn-group" role="group">
-                        <button id="zoomInBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-zoom-in"></i> 
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <button id="downloadCfgBtn" class="btn btn-sm clarifai-btn" disabled>
+                            <i class="bi bi-download me-1"></i>Download CFG
                         </button>
-                        <button id="zoomOutBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-zoom-out"></i> 
-                        </button>
-                        <button id="resetZoomBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-zoom-reset"></i> Reset
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button id="zoomInBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-in"></i> 
+                            </button>
+                            <button id="zoomOutBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-out"></i> 
+                            </button>
+                            <button id="resetZoomBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-reset"></i> Reset
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div id="cfgLoading" class="loading-overlay">

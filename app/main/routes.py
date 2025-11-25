@@ -42,8 +42,23 @@ def generate_cfg():
         return jsonify({"error": str(e)}), 400
 
 @main_bp.route('/', methods=['GET', 'POST'])
-@login_required
 def home():
+    if request.method == 'GET':
+        if current_user.is_authenticated:
+            return redirect(url_for('main.dashboard'))
+        return render_template(
+            'index.html',
+            comments='',
+            ast='',
+            code_input=''
+        )
+
+    # Guard POST requests so only authenticated users may submit code
+    if not current_user.is_authenticated:
+        if request.is_json:
+            return jsonify({'error': 'Authentication required'}), 401
+        return redirect(url_for('auth.login'))
+
     if request.method == 'POST':
         try:
             code_input = request.json.get('code', '') #
@@ -153,13 +168,6 @@ def home():
                 'cfg_supported': False  # Indicate CFG generation is not supported
             }), 500
 
-    # GET request
-    return render_template( #
-        'index.html',
-        comments='',
-        ast='',
-        code_input=''
-    )
 
 
 @main_bp.route('/dashboard') #

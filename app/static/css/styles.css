@@ -833,6 +833,13 @@ body{
   background-color: #e9ecef;
 }
 
+.file-tree .file.selected {
+  background-color: rgba(59, 108, 255, 0.15);
+  color: #1f47ff;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .file-tree .folder::before {
   content: '📁 ';
   margin-right: 4px;
