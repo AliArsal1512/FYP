@@ -206,6 +206,10 @@ class CFGGenerator:
             self._process_while_statement(stmt)
         elif isinstance(stmt, javalang.tree.ForStatement):
             self._process_for_statement(stmt)
+        elif isinstance(stmt, javalang.tree.DoStatement):
+            self._process_do_statement(stmt)
+        elif isinstance(stmt, javalang.tree.SwitchStatement):
+            self._process_switch_statement(stmt)
         elif isinstance(stmt, javalang.tree.BlockStatement):
             self._process_block(stmt.statements)
         elif isinstance(stmt, javalang.tree.ReturnStatement):
@@ -449,6 +453,158 @@ class CFGGenerator:
             # The loop only has: previous -> condition -> body -> condition (loop back)
             # No arrow from condition to any exit or subsequent node
             self.current_block = cond_block
+
+    def _process_do_statement(self, do_node):
+        """Process do-while loop"""
+        cond_line = do_node.condition.position.line if do_node.condition.position else "?"
+        cond_text = self._get_statement_text(cond_line)
+        
+        # Check if loop never runs after first iteration (always false condition)
+        never_runs = self._is_always_false_condition(do_node.condition)
+        
+        # Create body block first (do-while executes body before checking condition)
+        body_block = self._new_block("DO-WHILE BODY")
+        
+        # Connect current block to body (do-while always executes body at least once)
+        self._connect_blocks(self.current_block, body_block)
+        
+        if never_runs:
+            # Loop never runs after first iteration - create nodes but don't loop back
+            cond_block = self._new_block(f"DO-WHILE CONDITION\nL{cond_line}: {cond_text}")
+            
+            # Process body to create its nodes
+            saved_block = self.current_block
+            self.current_block = body_block
+            self._process_statement(do_node.body)
+            self.current_block = saved_block  # Restore
+            
+            # Connect body to condition (executes once)
+            self._connect_blocks(body_block, cond_block)
+            
+            # Create exit block - connect from condition (loop executes once then exits)
+            exit_block = self._new_block("LOOP EXIT")
+            self._connect_blocks(cond_block, exit_block)
+            self.current_block = exit_block
+            return
+        
+        # Process body
+        self.current_block = body_block
+        self._process_statement(do_node.body)
+        
+        # Create condition block
+        cond_block = self._new_block(f"DO-WHILE CONDITION\nL{cond_line}: {cond_text}")
+        # Connect body to condition (always executed after body)
+        self._connect_blocks(body_block, cond_block)
+        
+        # Analyze loop termination
+        is_infinite, reason = self._analyze_loop_termination(do_node.condition, do_node.body)
+        
+        # Fallback to simple check if analysis didn't find variables
+        if not is_infinite:
+            is_infinite = self._is_infinite_loop_condition(do_node.condition)
+        
+        # Connect condition back to body (true branch - continue loop)
+        self._connect_blocks(cond_block, body_block)
+        
+        # Handle exit block based on whether loop is infinite
+        if not is_infinite:
+            # Normal loop: condition can go to body or exit
+            exit_block = self._new_block("LOOP EXIT")
+            self._connect_blocks(cond_block, exit_block)
+            self.current_block = exit_block
+        else:
+            # For infinite loops, don't create exit node and don't allow further connections
+            # Mark that we're in an infinite loop context - no exit path exists
+            self.in_infinite_loop = True
+            # Set current_block to cond_block but mark it so no further connections are made
+            self.current_block = cond_block
+
+    def _process_switch_statement(self, switch_node):
+        """Process switch statement"""
+        expr_line = switch_node.expression.position.line if switch_node.expression.position else "?"
+        expr_text = self._get_statement_text(expr_line)
+        
+        # Create switch expression block
+        switch_block = self._new_block(f"SWITCH EXPRESSION\nL{expr_line}: {expr_text}")
+        self._connect_blocks(self.current_block, switch_block)
+        
+        # Create a merge block for after switch
+        merge_block = self._new_block("SWITCH MERGE")
+        
+        # Process each case
+        case_blocks = {}
+        case_statements_end_blocks = {}  # Track where each case ends
+        
+        if switch_node.cases:
+            for i, case in enumerate(switch_node.cases):
+                case_label = "default"
+                case_conditions = []
+                
+                if case.case:
+                    # This is a case with values
+                    for case_value in case.case:
+                        if isinstance(case_value, javalang.tree.Literal):
+                            case_conditions.append(str(case_value.value))
+                        elif isinstance(case_value, javalang.tree.MemberReference):
+                            case_conditions.append(case_value.member)
+                        else:
+                            case_conditions.append(str(case_value))
+                    case_label = "case " + ", ".join(case_conditions)
+                else:
+                    # This is the default case
+                    case_label = "default"
+                
+                # Create case label block
+                case_block = self._new_block(f"CASE: {case_label}")
+                case_blocks[i] = case_block
+                self._connect_blocks(switch_block, case_block)
+                
+                # Process case statements
+                if case.statements:
+                    self.current_block = case_block
+                    has_break = False
+                    
+                    for stmt in case.statements:
+                        # Check if this is a break statement
+                        if isinstance(stmt, javalang.tree.BreakStatement):
+                            # Break exits the switch - connect to merge block
+                            break_block = self._new_block("BREAK")
+                            self._connect_blocks(self.current_block, break_block)
+                            self._connect_blocks(break_block, merge_block)
+                            case_statements_end_blocks[i] = break_block
+                            has_break = True
+                            # Don't process further statements in this case after break
+                            break
+                        else:
+                            self._process_statement(stmt)
+                            case_statements_end_blocks[i] = self.current_block
+                    
+                    # Handle fall-through: if case doesn't end with break, connect to next case
+                    if not has_break:
+                        if i < len(switch_node.cases) - 1:
+                            # Not the last case - falls through to next case
+                            next_case_block = case_blocks.get(i + 1)
+                            if next_case_block:
+                                end_block = case_statements_end_blocks.get(i, case_block)
+                                self._connect_blocks(end_block, next_case_block)
+                        else:
+                            # Last case - if no break, connect to merge
+                            end_block = case_statements_end_blocks.get(i, case_block)
+                            self._connect_blocks(end_block, merge_block)
+                else:
+                    # Empty case - falls through to next case or merge
+                    case_statements_end_blocks[i] = case_block
+                    if i < len(switch_node.cases) - 1:
+                        # Falls through to next case
+                        next_case_block = case_blocks.get(i + 1)
+                        if next_case_block:
+                            self._connect_blocks(case_block, next_case_block)
+                    else:
+                        # Last case - connect to merge
+                        self._connect_blocks(case_block, merge_block)
+        
+        # Set current block to merge
+        self.current_block = merge_block
 
     def _new_block(self, label=None):
         """Create a new basic block"""
