@@ -14,11 +14,70 @@ def preprocess_code(code: str) -> str:
     )
 
 
+def wrap_code_if_needed(java_code: str) -> tuple[str, bool]:
+    """
+    Wrap Java code in a class if it doesn't have one.
+    Returns: (wrapped_code, was_wrapped)
+    """
+    stripped = java_code.strip()
+    
+    # Check if code already starts with a class declaration
+    if (stripped.startswith('class ') or 
+        stripped.startswith('public class ') or 
+        stripped.startswith('private class ') or 
+        stripped.startswith('protected class ') or
+        stripped.startswith('abstract class ') or
+        stripped.startswith('final class ')):
+        return java_code, False
+    
+    # Try parsing as-is first
+    try:
+        javalang.parse.parse(java_code)
+        return java_code, False
+    except javalang.parser.JavaSyntaxError as e:
+        # Check if error is "expected type declaration" at line 1
+        error_line = 1
+        if e.at:
+            if isinstance(e.at, javalang.tokenizer.Position):
+                error_line = e.at.line
+            elif hasattr(e.at, 'position') and e.at.position:
+                error_line = e.at.position.line
+        
+        error_desc = e.description.lower() if e.description else ""
+        is_type_declaration_error = (
+            "expected type declaration" in error_desc or
+            ("expected" in error_desc and "declaration" in error_desc)
+        )
+        
+        # If error is at line 1 and is about type declaration, wrap in class
+        if error_line == 1 and is_type_declaration_error:
+            try:
+                wrapped_code = f"public class nan {{\n{java_code}\n}}"
+                # Verify the wrapped code parses correctly
+                javalang.parse.parse(wrapped_code)
+                return wrapped_code, True
+            except:
+                pass
+        
+        # For other errors, still try wrapping if it doesn't start with class
+        try:
+            wrapped_code = f"public class nan {{\n{java_code}\n}}"
+            javalang.parse.parse(wrapped_code)
+            return wrapped_code, True
+        except:
+            pass
+        
+        # If wrapping doesn't help, return original and let caller handle the error
+        return java_code, False
+
+
 def format_ast(java_code: str) -> str: #
     # ... (your format_ast function)
     # Make sure to handle imports like javalang at the top of this file
     try:
-        tree = javalang.parse.parse(java_code)
+        # Wrap code in class if needed
+        wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
+        tree = javalang.parse.parse(wrapped_code)
         output = ['<div class="ast-tree">']
 
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
@@ -150,9 +209,14 @@ def clean_comment(raw_comment: str) -> str: #
 def extract_methods(java_code: str) -> dict: #
     # Remember to return jsonify errors or raise custom exceptions to be handled by routes
     try:
-        tree = javalang.parse.parse(java_code)
+        # Wrap code in class if needed
+        wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
+        tree = javalang.parse.parse(wrapped_code)
         lines = java_code.splitlines()
         method_map = {}
+        
+        # Adjust line offset if code was wrapped (wrapped code adds 1 line at the start)
+        line_offset = 1 if was_wrapped else 0
 
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
             class_name = class_node.name
@@ -162,7 +226,9 @@ def extract_methods(java_code: str) -> dict: #
                 if method.body is None:
                     continue
 
-                start_line = method.position.line - 1 if method.position else 0
+                # Adjust line number if code was wrapped
+                start_line = (method.position.line - 1 - line_offset) if method.position else 0
+                start_line = max(0, start_line)  # Ensure non-negative
 
                 brace_count = 0
                 method_lines = []
@@ -209,13 +275,20 @@ def extract_methods(java_code: str) -> dict: #
 def extract_classes(java_code: str) -> dict: #
     # ... (your extract_classes function)
     try:
-        tree = javalang.parse.parse(java_code)
+        # Wrap code in class if needed
+        wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
+        tree = javalang.parse.parse(wrapped_code)
         lines = java_code.splitlines()
         class_map = {}
+        
+        # Adjust line offset if code was wrapped (wrapped code adds 1 line at the start)
+        line_offset = 1 if was_wrapped else 0
 
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
             class_name = class_node.name
-            start_line = class_node.position.line - 1 if class_node.position else 0
+            # Adjust line number if code was wrapped
+            start_line = (class_node.position.line - 1 - line_offset) if class_node.position else 0
+            start_line = max(0, start_line)  # Ensure non-negative
 
             brace_count = 0
             class_lines = []
@@ -257,7 +330,9 @@ def compute_hash(code): #
 # utils.py
 def build_ast_json(java_code: str) -> dict:
     try:
-        tree = javalang.parse.parse(java_code)
+        # Wrap code in class if needed
+        wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
+        tree = javalang.parse.parse(wrapped_code)
         classes = []
         
         # Extract classes and methods first to generate comments

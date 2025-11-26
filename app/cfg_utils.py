@@ -20,6 +20,7 @@ class CFGGenerator:
         self.method_colors = {}  # Map method names to their unique colors
         self.node_method_map = {}  # Map node IDs to method names for coloring
         self.call_stack = []  # Track method call stack: [(method_name, block_id), ...]
+        self.in_infinite_loop = False  # Track if we're in an infinite loop context
 
     def generate(self, java_code: str) -> nx.DiGraph:
         """Generate CFG from Java code"""
@@ -31,19 +32,47 @@ class CFGGenerator:
             self._process_tree(tree)
             return self.cfg
         except javalang.parser.JavaSyntaxError as e:
-            # If parsing fails, try wrapping in a class if it looks like a single method
+            # Check if error is "expected type declaration" at line 1
+            error_line = 1
+            if e.at:
+                if isinstance(e.at, javalang.tokenizer.Position):
+                    error_line = e.at.line
+                elif hasattr(e.at, 'position') and e.at.position:
+                    error_line = e.at.position.line
+            
+            error_desc = e.description.lower() if e.description else ""
+            is_type_declaration_error = (
+                "expected type declaration" in error_desc or
+                "expected" in error_desc and "declaration" in error_desc
+            )
+            
+            # If error is at line 1 and is about type declaration, wrap in class
+            if error_line == 1 and is_type_declaration_error:
+                try:
+                    # Wrap code in a public class
+                    wrapped_code = f"public class nan {{\n{java_code}\n}}"
+                    tree = javalang.parse.parse(wrapped_code)
+                    self._build_line_map(java_code)  # Use original for line mapping
+                    self._process_tree(tree)
+                    return self.cfg
+                except Exception as wrap_error:
+                    # If wrapping also fails, raise original error
+                    raise ValueError(f"Java syntax error: {e}")
+            
+            # If parsing fails for other reasons, try wrapping in a class if it doesn't start with class
             try:
-                # Check if it looks like a method (has return type, name, parameters, body)
                 stripped = java_code.strip()
-                if not stripped.startswith('class ') and not stripped.startswith('public class ') and not stripped.startswith('private class '):
+                if not stripped.startswith('class ') and not stripped.startswith('public class ') and \
+                   not stripped.startswith('private class ') and not stripped.startswith('protected class '):
                     # Try wrapping in a dummy class
-                    wrapped_code = f"class TempClass {{\n{java_code}\n}}"
+                    wrapped_code = f"public class nan {{\n{java_code}\n}}"
                     tree = javalang.parse.parse(wrapped_code)
                     self._build_line_map(java_code)  # Use original for line mapping
                     self._process_tree(tree)
                     return self.cfg
             except:
                 pass
+            
             raise ValueError(f"Java syntax error: {e}")
 
     def _build_line_map(self, java_code):
@@ -160,7 +189,14 @@ class CFGGenerator:
     def _process_block(self, block_node):
         """Process a block of statements"""
         for stmt in block_node:
-            self._process_statement(stmt)
+            # If we're in an infinite loop context, don't process further statements
+            # (they're unreachable and shouldn't be connected to the loop)
+            if self.in_infinite_loop:
+                # Don't process or connect any statements after infinite loop
+                # They are unreachable code
+                break
+            else:
+                self._process_statement(stmt)
 
     def _process_statement(self, stmt):
         """Process individual statements"""
@@ -246,8 +282,33 @@ class CFGGenerator:
         cond_line = while_node.condition.position.line if while_node.condition.position else "?"
         cond_text = self._get_statement_text(cond_line)
         
-        # Check if this is an infinite loop
-        is_infinite = self._is_infinite_loop_condition(while_node.condition)
+        # Check if loop never runs (always false condition)
+        never_runs = self._is_always_false_condition(while_node.condition)
+        
+        if never_runs:
+            # Loop never runs - create nodes but don't connect them with arrows
+            cond_block = self._new_block(f"WHILE CONDITION\nL{cond_line}: {cond_text}")
+            body_block = self._new_block("LOOP BODY")
+            
+            # Process body to create its nodes (but don't connect)
+            saved_block = self.current_block
+            self.current_block = body_block
+            self._process_statement(while_node.body)
+            self.current_block = saved_block  # Restore - don't connect loop nodes
+            
+            # Create exit block but don't connect from condition
+            exit_block = self._new_block("LOOP EXIT")
+            # Connect from previous block to exit (skip the loop entirely)
+            self._connect_blocks(self.current_block, exit_block)
+            self.current_block = exit_block
+            return
+        
+        # Analyze loop termination using condition and body analysis
+        is_infinite, reason = self._analyze_loop_termination(while_node.condition, while_node.body)
+        
+        # Fallback to simple check if analysis didn't find variables
+        if not is_infinite:
+            is_infinite = self._is_infinite_loop_condition(while_node.condition)
         
         cond_block = self._new_block(f"WHILE CONDITION\nL{cond_line}: {cond_text}")
         
@@ -256,31 +317,27 @@ class CFGGenerator:
         
         # Create loop body block
         body_block = self._new_block("LOOP BODY")
-        # For infinite loops, only connect to body (no false branch to exit)
-        if is_infinite:
-            # Only connect condition to body (no exit path)
-            self._connect_blocks(cond_block, body_block)
-        else:
-            # Normal loop: condition can go to body or exit
-            self._connect_blocks(cond_block, body_block)
-            exit_block = self._new_block("LOOP EXIT")
-            self._connect_blocks(cond_block, exit_block)
+        # Always connect condition to body (true branch)
+        self._connect_blocks(cond_block, body_block)
         
         # Process body
         self.current_block = body_block
         self._process_statement(while_node.body)
         self._connect_blocks(body_block, cond_block)  # Loop back
         
-        # Set current block based on whether it's infinite
+        # Handle exit block based on whether loop is infinite
         if not is_infinite:
-            # Find the exit block we created
-            for node in self.cfg.nodes():
-                if "LOOP EXIT" in self.cfg.nodes[node].get("label", "") and \
-                   self.cfg.has_edge(cond_block, node):
-                    self.current_block = node
-                    break
+            # Normal loop: condition can go to body or exit
+            exit_block = self._new_block("LOOP EXIT")
+            self._connect_blocks(cond_block, exit_block)
+            self.current_block = exit_block
         else:
-            # For infinite loops, current_block stays at cond_block (no exit)
+            # For infinite loops, don't create exit node and don't allow further connections
+            # Mark that we're in an infinite loop context - no exit path exists
+            self.in_infinite_loop = True
+            # Set current_block to cond_block but mark it so no further connections are made
+            # The loop only has: previous -> condition -> body -> condition (loop back)
+            # No arrow from condition to any exit or subsequent node
             self.current_block = cond_block
 
     def _process_for_statement(self, for_node):
@@ -314,6 +371,28 @@ class CFGGenerator:
         cond_block = self._new_block(f"FOR CONDITION\nL{cond_line}: {cond_text}")
         self._connect_blocks(init_block, cond_block)
         
+        # Check if loop never runs (always false condition)
+        never_runs = False
+        if has_condition:
+            never_runs = self._is_always_false_condition(for_node.control.condition)
+        
+        if never_runs:
+            # Loop never runs - create nodes but don't connect them with arrows
+            body_block = self._new_block("LOOP BODY")
+            
+            # Process body to create its nodes (but don't connect)
+            saved_block = self.current_block
+            self.current_block = body_block
+            self._process_statement(for_node.body)
+            self.current_block = saved_block  # Restore - don't connect loop nodes
+            
+            # Create exit block but don't connect from condition
+            exit_block = self._new_block("LOOP EXIT")
+            # Connect from init block to exit (skip the loop entirely)
+            self._connect_blocks(init_block, exit_block)
+            self.current_block = exit_block
+            return
+        
         # Create body block
         body_block = self._new_block("LOOP BODY")
         self._connect_blocks(cond_block, body_block)
@@ -334,8 +413,27 @@ class CFGGenerator:
         else:
             self._connect_blocks(body_block, cond_block)
         
-        # Check if this is an infinite loop (no condition or condition is always true)
-        is_infinite = not has_condition or (has_condition and self._is_infinite_loop_condition(for_node.control.condition))
+        # Analyze loop termination for for loops
+        is_infinite = False
+        if not has_condition:
+            # No condition means infinite loop
+            is_infinite = True
+        elif has_condition:
+            # Analyze if condition variables are modified in a way that could terminate
+            is_infinite, reason = self._analyze_loop_termination(for_node.control.condition, for_node.body)
+            # Also check update statements - if update modifies condition variables, loop might terminate
+            if not is_infinite and hasattr(for_node.control, 'update') and for_node.control.update:
+                # Check if update modifies condition variables
+                condition_vars = self._extract_variables_from_expression(for_node.control.condition)
+                for update_stmt in for_node.control.update:
+                    modified_vars = self._extract_modified_variables(update_stmt)
+                    if condition_vars.intersection(modified_vars):
+                        # Condition variable is modified in update - loop can terminate
+                        is_infinite = False
+                        break
+            # Fallback to simple check
+            if not is_infinite:
+                is_infinite = self._is_infinite_loop_condition(for_node.control.condition)
         
         # Only create exit block if not infinite loop
         if not is_infinite:
@@ -344,8 +442,12 @@ class CFGGenerator:
             self._connect_blocks(cond_block, exit_block)
             self.current_block = exit_block
         else:
-            # For infinite loops, only connect condition to body (no exit path)
-            # The connection to body_block is already made above, so we just don't create exit
+            # For infinite loops, don't create exit node and don't allow further connections
+            # Mark that we're in an infinite loop context - no exit path exists
+            self.in_infinite_loop = True
+            # Set current_block to cond_block but mark it so no further connections are made
+            # The loop only has: previous -> condition -> body -> condition (loop back)
+            # No arrow from condition to any exit or subsequent node
             self.current_block = cond_block
 
     def _new_block(self, label=None):
@@ -367,10 +469,189 @@ class CFGGenerator:
 
     def _connect_blocks(self, from_block, to_block):
         """Connect two blocks in the CFG"""
+        # Don't create edges if we're in an infinite loop context and trying to connect from the loop
+        if self.in_infinite_loop and from_block != to_block:
+            # Check if from_block is part of an infinite loop (has "WHILE CONDITION" or "FOR CONDITION" in label)
+            from_label = self.cfg.nodes[from_block].get("label", "")
+            if "WHILE CONDITION" in from_label or "FOR CONDITION" in from_label:
+                # Don't create edge from infinite loop condition to anything outside the loop
+                return
         self.cfg.add_edge(from_block, to_block)
     
+    def _extract_variables_from_expression(self, expr):
+        """Extract variable names from an expression"""
+        variables = set()
+        
+        if isinstance(expr, javalang.tree.MemberReference):
+            variables.add(expr.member)
+        elif isinstance(expr, javalang.tree.BinaryOperation):
+            variables.update(self._extract_variables_from_expression(expr.operandl))
+            variables.update(self._extract_variables_from_expression(expr.operandr))
+        elif isinstance(expr, javalang.tree.UnaryOperation):
+            variables.update(self._extract_variables_from_expression(expr.operand))
+        elif isinstance(expr, javalang.tree.Cast):
+            if expr.expression:
+                variables.update(self._extract_variables_from_expression(expr.expression))
+        elif isinstance(expr, javalang.tree.MethodInvocation):
+            # Method calls might modify state, but we'll focus on direct variable access
+            pass
+        
+        return variables
+    
+    def _extract_modified_variables(self, stmt):
+        """Extract variables that are modified in a statement"""
+        modified = set()
+        
+        if isinstance(stmt, javalang.tree.StatementExpression):
+            expr = stmt.expression
+            if isinstance(expr, javalang.tree.Assignment):
+                # Extract left-hand side variable
+                if isinstance(expr.expressionl, javalang.tree.MemberReference):
+                    modified.add(expr.expressionl.member)
+            elif isinstance(expr, (javalang.tree.PostfixExpression, javalang.tree.PrefixExpression)):
+                # Postfix/prefix operations like i++, --j
+                if isinstance(expr.expression, javalang.tree.MemberReference):
+                    modified.add(expr.expression.member)
+        elif isinstance(stmt, javalang.tree.BlockStatement):
+            for sub_stmt in stmt.statements:
+                modified.update(self._extract_modified_variables(sub_stmt))
+        
+        return modified
+    
+    def _analyze_loop_termination(self, condition_node, loop_body):
+        """
+        Analyze if a loop can terminate by checking if condition variables are modified
+        in a way that could make the condition false.
+        Returns: (is_infinite, reason)
+        """
+        if condition_node is None:
+            return True, "No condition"
+        
+        # Check for literal true
+        if isinstance(condition_node, javalang.tree.Literal):
+            if condition_node.value == "true" or condition_node.value == "1":
+                return True, "Always true literal"
+        
+        # Check for binary operations that are always true
+        if isinstance(condition_node, javalang.tree.BinaryOperation):
+            # Check for expressions like 1==1, true==true, etc.
+            if isinstance(condition_node.operandl, javalang.tree.Literal) and \
+               isinstance(condition_node.operandr, javalang.tree.Literal):
+                left_val = str(condition_node.operandl.value)
+                right_val = str(condition_node.operandr.value)
+                op = condition_node.operator
+                
+                if op == "==" and left_val == right_val:
+                    return True, "Always true comparison"
+                if op == "!=" and left_val != right_val:
+                    return True, "Always true comparison"
+        
+        # Extract variables from condition
+        condition_vars = self._extract_variables_from_expression(condition_node)
+        if not condition_vars:
+            # No variables in condition, check if it's always true
+            cond_text = ""
+            if condition_node.position:
+                cond_text = self._get_statement_text(condition_node.position.line).lower()
+                cond_clean = re.sub(r'\s+', '', cond_text)
+                cond_only = re.sub(r'^(while|for)\s*\(', '', cond_clean)
+                cond_only = re.sub(r'\)\s*\{?$', '', cond_only)
+                
+                infinite_patterns = ["true", "1==1", "true==true", "1!=0", "true!=false", 
+                                   "(true)", "(1==1)", "1<2", "2>1", "true||false", "1", 
+                                   "true&&true", "!false"]
+                if cond_only in infinite_patterns or cond_clean in infinite_patterns:
+                    return True, "Always true pattern"
+            return False, "No variables to analyze"
+        
+        # Extract modified variables from loop body
+        modified_vars = set()
+        if loop_body:
+            if isinstance(loop_body, javalang.tree.BlockStatement):
+                for stmt in loop_body.statements:
+                    modified_vars.update(self._extract_modified_variables(stmt))
+            else:
+                modified_vars.update(self._extract_modified_variables(loop_body))
+        
+        # Check if any condition variable is modified
+        condition_vars_modified = condition_vars.intersection(modified_vars)
+        
+        if not condition_vars_modified:
+            # Condition variables are not modified in loop body - likely infinite
+            # Unless condition is checking something external
+            return True, f"Condition variables {condition_vars} not modified in loop body"
+        
+        # Analyze the direction of modification relative to condition
+        # This is a simplified analysis - we check if the modification could lead to termination
+        # For example: while (i > 0) with i++ would be infinite, but i-- would terminate
+        
+        # Get condition operator and operands
+        if isinstance(condition_node, javalang.tree.BinaryOperation):
+            op = condition_node.operator
+            left = condition_node.operandl
+            right = condition_node.operandr
+            
+            # Check if left is a variable and right is a constant
+            if isinstance(left, javalang.tree.MemberReference) and isinstance(right, javalang.tree.Literal):
+                var_name = left.member
+                if var_name in condition_vars_modified:
+                    # Check modification direction (simplified - would need deeper analysis)
+                    # For now, if variable is modified, assume it might terminate
+                    # unless we can prove otherwise
+                    return False, f"Variable {var_name} is modified"
+            
+            # Check if right is a variable and left is a constant
+            if isinstance(right, javalang.tree.MemberReference) and isinstance(left, javalang.tree.Literal):
+                var_name = right.member
+                if var_name in condition_vars_modified:
+                    return False, f"Variable {var_name} is modified"
+        
+        # If we can't determine, assume it might terminate (conservative approach)
+        return False, "Unable to determine - assuming might terminate"
+    
+    def _is_always_false_condition(self, condition_node):
+        """Check if a condition is always false (loop never runs)"""
+        if condition_node is None:
+            return False
+        
+        # Check for literal false
+        if isinstance(condition_node, javalang.tree.Literal):
+            if condition_node.value == "false" or condition_node.value == "0":
+                return True
+        
+        # Check for binary operations that are always false
+        if isinstance(condition_node, javalang.tree.BinaryOperation):
+            if isinstance(condition_node.operandl, javalang.tree.Literal) and \
+               isinstance(condition_node.operandr, javalang.tree.Literal):
+                left_val = str(condition_node.operandl.value)
+                right_val = str(condition_node.operandr.value)
+                op = condition_node.operator
+                
+                if op == "==" and left_val != right_val:
+                    return True
+                if op == "!=" and left_val == right_val:
+                    return True
+                if op == "<" and float(left_val) >= float(right_val) if left_val.isdigit() and right_val.isdigit() else False:
+                    return True
+                if op == ">" and float(left_val) <= float(right_val) if left_val.isdigit() and right_val.isdigit() else False:
+                    return True
+        
+        # Check condition text for common never-run patterns
+        if condition_node.position:
+            cond_text = self._get_statement_text(condition_node.position.line).lower()
+            cond_clean = re.sub(r'\s+', '', cond_text)
+            cond_only = re.sub(r'^(while|for)\s*\(', '', cond_clean)
+            cond_only = re.sub(r'\)\s*\{?$', '', cond_only)
+            
+            never_run_patterns = ["false", "0", "1==0", "false==true", "1>2", "2<1", 
+                                 "(false)", "(1==0)", "true&&false", "!true"]
+            if cond_only in never_run_patterns or cond_clean in never_run_patterns:
+                return True
+        
+        return False
+    
     def _is_infinite_loop_condition(self, condition_node):
-        """Check if a condition is always true (infinite loop)"""
+        """Check if a condition is always true (infinite loop) - simplified version"""
         if condition_node is None:
             return True
         
@@ -381,7 +662,6 @@ class CFGGenerator:
         
         # Check for binary operations that are always true
         if isinstance(condition_node, javalang.tree.BinaryOperation):
-            # Check for expressions like 1==1, true==true, etc.
             if isinstance(condition_node.operandl, javalang.tree.Literal) and \
                isinstance(condition_node.operandr, javalang.tree.Literal):
                 left_val = str(condition_node.operandl.value)
@@ -396,18 +676,14 @@ class CFGGenerator:
         # Check condition text for common infinite loop patterns
         if condition_node.position:
             cond_text = self._get_statement_text(condition_node.position.line).lower()
-            # Remove whitespace and check for patterns
             cond_clean = re.sub(r'\s+', '', cond_text)
-            # Extract just the condition part (remove while/for keywords and parentheses)
             cond_only = re.sub(r'^(while|for)\s*\(', '', cond_clean)
             cond_only = re.sub(r'\)\s*\{?$', '', cond_only)
             
-            # Common patterns: true, 1==1, true==true, etc.
             infinite_patterns = ["true", "1==1", "true==true", "1!=0", "true!=false", 
                                "(true)", "(1==1)", "1<2", "2>1", "true||false", "1", 
                                "true&&true", "!false"]
-            if cond_only in infinite_patterns or cond_clean in infinite_patterns or \
-               any(cond_only == p or cond_clean == p for p in infinite_patterns):
+            if cond_only in infinite_patterns or cond_clean in infinite_patterns:
                 return True
         
         return False

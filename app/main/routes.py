@@ -16,7 +16,7 @@ from ..models import CodeSubmission, User # from app/models.py
 from .. import db # from app/__init__.py
 from ..utils import ( # from app/utils.py
     preprocess_code, format_ast, clean_comment,
-    extract_methods, extract_classes, compute_hash, build_ast_json
+    extract_methods, extract_classes, compute_hash, build_ast_json, wrap_code_if_needed
 )
 
 @main_bp.route('/generate-cfg', methods=['POST'])
@@ -80,8 +80,11 @@ def home():
                 ast_output = existing_submission.ast_content #
                 comments_output = existing_submission.comments_content #
             else:
+                # Wrap code in class if needed (handled in utils functions)
+                # Try parsing to catch any remaining errors
                 try:
-                    javalang.parse.parse(code_input) #
+                    wrapped_code, was_wrapped = wrap_code_if_needed(code_input)
+                    javalang.parse.parse(wrapped_code)
                 except javalang.parser.JavaSyntaxError as e: #
                     line_number = getattr(e.at, 'line', 'unknown') #
                     return jsonify({ #
