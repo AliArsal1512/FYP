@@ -423,10 +423,24 @@ class CFGGenerator:
         cond_text = "true"
         
         if is_foreach:
-            # For-each loop
+            # For-each loop (enhanced for loop)
             cond_line = for_node.position.line if for_node.position else "?"
-            iterable = for_node.control.iterable if hasattr(for_node.control, 'iterable') else "?"
             var_name = for_node.control.var.name if hasattr(for_node.control.var, 'name') else "?"
+            
+            # Extract iterable name - handle different types (MemberReference, MethodInvocation, etc.)
+            iterable = "?"
+            if hasattr(for_node.control, 'iterable') and for_node.control.iterable:
+                iterable_node = for_node.control.iterable
+                if isinstance(iterable_node, javalang.tree.MemberReference):
+                    iterable = iterable_node.member
+                elif isinstance(iterable_node, javalang.tree.MethodInvocation):
+                    iterable = f"{iterable_node.member}()"
+                elif hasattr(iterable_node, 'name'):
+                    iterable = iterable_node.name
+                else:
+                    # Try to get a string representation
+                    iterable = str(iterable_node)
+            
             cond_text = f"for ({var_name} : {iterable})"
         elif has_condition:
             # Standard for loop with condition
@@ -485,7 +499,10 @@ class CFGGenerator:
         
         # Analyze loop termination for for loops
         is_infinite = False
-        if not has_condition:
+        if is_foreach:
+            # Enhanced for loops (for-each) are always finite - they iterate over a collection/array
+            is_infinite = False
+        elif not has_condition:
             # No condition means infinite loop
             is_infinite = True
         elif has_condition:
