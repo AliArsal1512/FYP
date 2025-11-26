@@ -131,6 +131,9 @@ class CFGGenerator:
         if method_key in self.method_entries:
             return
         
+        # Reset infinite loop flag for each new method
+        self.in_infinite_loop = False
+        
         # Push this method onto the call stack BEFORE creating entry block
         # This ensures the entry block gets this method's color
         self.call_stack.append((method_key, None))
@@ -486,21 +489,123 @@ class CFGGenerator:
             # No condition means infinite loop
             is_infinite = True
         elif has_condition:
+            # For for loops, the update clause is critical - check it first
             # Analyze if condition variables are modified in a way that could terminate
             is_infinite, reason = self._analyze_loop_termination(for_node.control.condition, for_node.body)
-            # Also check update statements - if update modifies condition variables, loop might terminate
-            if not is_infinite and hasattr(for_node.control, 'update') and for_node.control.update:
-                # Check if update modifies condition variables
+            # Also check update statements - analyze modification direction in update clause
+            # For for loops, update clause is the primary place where condition variables are modified
+            if hasattr(for_node.control, 'update') and for_node.control.update:
                 condition_vars = self._extract_variables_from_expression(for_node.control.condition)
+                update_modification_directions = {}
+                # Analyze modification direction in update statements
                 for update_stmt in for_node.control.update:
+                    # Update statements in for loops can be MemberReference directly (e.g., i++, i--)
+                    # or StatementExpression. Handle both cases.
+                    if isinstance(update_stmt, javalang.tree.MemberReference):
+                        # Direct MemberReference with postfix/prefix operators
+                        var_name = update_stmt.member
+                        if hasattr(update_stmt, 'postfix_operators') and update_stmt.postfix_operators:
+                            if '++' in update_stmt.postfix_operators:
+                                update_modification_directions[var_name] = "increment"
+                            elif '--' in update_stmt.postfix_operators:
+                                update_modification_directions[var_name] = "decrement"
+                        elif hasattr(update_stmt, 'prefix_operators') and update_stmt.prefix_operators:
+                            if '++' in update_stmt.prefix_operators:
+                                update_modification_directions[var_name] = "increment"
+                            elif '--' in update_stmt.prefix_operators:
+                                update_modification_directions[var_name] = "decrement"
+                    else:
+                        # StatementExpression or other types - need to wrap in StatementExpression for analysis
+                        # Create a temporary StatementExpression wrapper if needed
+                        if not isinstance(update_stmt, javalang.tree.StatementExpression):
+                            # For other types, try to analyze directly
+                            if isinstance(update_stmt, javalang.tree.Assignment):
+                                # Handle assignment in update clause
+                                if isinstance(update_stmt.expressionl, javalang.tree.MemberReference):
+                                    var_name = update_stmt.expressionl.member
+                                    # Check if it's a compound assignment
+                                    if hasattr(update_stmt, 'operator'):
+                                        if update_stmt.operator == "+=":
+                                            update_modification_directions[var_name] = "increment"
+                                        elif update_stmt.operator == "-=":
+                                            update_modification_directions[var_name] = "decrement"
+                        else:
+                            self._analyze_modification_direction(update_stmt, update_modification_directions)
                     modified_vars = self._extract_modified_variables(update_stmt)
                     if condition_vars.intersection(modified_vars):
-                        # Condition variable is modified in update - loop can terminate
-                        is_infinite = False
-                        break
-            # Fallback to simple check
-            if not is_infinite:
+                        # Condition variable is modified in update - analyze direction
+                        modified_var = list(condition_vars.intersection(modified_vars))[0]
+                        mod_dir = update_modification_directions.get(modified_var, "unknown")
+                        
+                        # Analyze if modification direction leads to termination
+                        if isinstance(for_node.control.condition, javalang.tree.BinaryOperation):
+                            op = for_node.control.condition.operator
+                            left = for_node.control.condition.operandl
+                            right = for_node.control.condition.operandr
+                            
+                            # Check if left is variable and right is constant or member reference
+                            if isinstance(left, javalang.tree.MemberReference):
+                                if left.member == modified_var:
+                                    # For > operator: variable > something
+                                    # If variable is incremented, condition stays true (infinite)
+                                    if op == ">" or op == ">=":
+                                        if mod_dir == "increment":
+                                            is_infinite = True
+                                            break
+                                        elif mod_dir == "decrement":
+                                            is_infinite = False
+                                            break
+                                    # For < operator: variable < something
+                                    # If variable is decremented, condition stays true (infinite)
+                                    # If variable is incremented, condition can become false (terminate)
+                                    if op == "<" or op == "<=":
+                                        if mod_dir == "decrement":
+                                            is_infinite = True
+                                            break
+                                        elif mod_dir == "increment":
+                                            is_infinite = False
+                                            break
+                            
+                            # Check if right is variable and left is constant or member reference
+                            if isinstance(right, javalang.tree.MemberReference):
+                                if right.member == modified_var:
+                                    # For > operator: something > variable
+                                    # If variable is decremented, condition stays true (infinite)
+                                    if op == ">":
+                                        if mod_dir == "decrement":
+                                            is_infinite = True
+                                            break
+                                        elif mod_dir == "increment":
+                                            is_infinite = False
+                                            break
+                                    # For < operator: something < variable
+                                    # If variable is incremented, condition stays true (infinite)
+                                    if op == "<":
+                                        if mod_dir == "increment":
+                                            is_infinite = True
+                                            break
+                                        elif mod_dir == "decrement":
+                                            is_infinite = False
+                                            break
+                        else:
+                            # If we can't analyze direction, assume it can terminate
+                            is_infinite = False
+                            break
+                
+                # If update clause didn't give us a definitive answer, check body
+                if is_infinite is None:
+                    is_infinite, reason = self._analyze_loop_termination(for_node.control.condition, for_node.body)
+            else:
+                # No update clause, analyze body
+                is_infinite, reason = self._analyze_loop_termination(for_node.control.condition, for_node.body)
+            
+            # Fallback to simple check if still not determined
+            if is_infinite is None:
                 is_infinite = self._is_infinite_loop_condition(for_node.control.condition)
+            elif is_infinite is False:
+                # Double-check with simple condition check
+                if self._is_infinite_loop_condition(for_node.control.condition):
+                    is_infinite = True
         
         # Only create exit block if not infinite loop
         if not is_infinite:
@@ -730,6 +835,17 @@ class CFGGenerator:
     def _extract_modified_variables(self, stmt):
         """Extract variables that are modified in a statement"""
         modified = set()
+        
+        # Handle direct MemberReference (e.g., in for loop update clause: i++, i--)
+        if isinstance(stmt, javalang.tree.MemberReference):
+            # Check for postfix operators (a++, a--)
+            if hasattr(stmt, 'postfix_operators') and stmt.postfix_operators:
+                if stmt.member:
+                    modified.add(stmt.member)
+            # Check for prefix operators (++a, --a)
+            elif hasattr(stmt, 'prefix_operators') and stmt.prefix_operators:
+                if stmt.member:
+                    modified.add(stmt.member)
         
         if isinstance(stmt, javalang.tree.StatementExpression):
             expr = stmt.expression
