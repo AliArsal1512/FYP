@@ -247,6 +247,65 @@ class CFGGenerator:
         if line_no in self.line_map:
             return self.line_map[line_no][:100]  # Truncate long lines
         return ""
+    
+    def _extract_condition_text(self, condition_node):
+        """Extract readable condition text from condition node - returns only the condition expression"""
+        if condition_node is None:
+            return "true"
+        
+        # First try to reconstruct from AST (more reliable and avoids duplication)
+        if isinstance(condition_node, javalang.tree.Literal):
+            return str(condition_node.value)
+        elif isinstance(condition_node, javalang.tree.MemberReference):
+            return condition_node.member
+        elif isinstance(condition_node, javalang.tree.BinaryOperation):
+            left = self._extract_condition_text(condition_node.operandl) if hasattr(condition_node, 'operandl') else "?"
+            right = self._extract_condition_text(condition_node.operandr) if hasattr(condition_node, 'operandr') else "?"
+            op = condition_node.operator if hasattr(condition_node, 'operator') else "?"
+            return f"{left} {op} {right}"
+        elif isinstance(condition_node, javalang.tree.MethodInvocation):
+            method_name = condition_node.member if hasattr(condition_node, 'member') else "?"
+            args = ""
+            if hasattr(condition_node, 'arguments') and condition_node.arguments:
+                # Try to get argument count or simple representation
+                args = f"({len(condition_node.arguments)} args)"
+            return f"{method_name}{args}"
+        elif hasattr(javalang.tree, 'UnaryExpression') and isinstance(condition_node, javalang.tree.UnaryExpression):
+            # Handle unary expressions like !x, -x
+            if hasattr(condition_node, 'operator') and hasattr(condition_node, 'expression'):
+                op = condition_node.operator
+                expr = self._extract_condition_text(condition_node.expression)
+                return f"{op}{expr}"
+        
+        # Fallback: try to get from line number and extract condition part
+        # Only use this if AST reconstruction didn't work
+        if condition_node.position:
+            line_text = self._get_statement_text(condition_node.position.line)
+            if line_text:
+                # Try to extract just the condition part (remove while/for/if keywords)
+                # Remove common patterns like "while (", "for (", "if ("
+                cond_text = re.sub(r'^\s*(while|for|if|do)\s*\(', '', line_text, flags=re.IGNORECASE)
+                cond_text = re.sub(r'\)\s*\{?\s*$', '', cond_text)
+                cond_text = cond_text.strip()
+                # Also try to remove any leading/trailing whitespace and braces
+                cond_text = re.sub(r'^\s*\(?\s*', '', cond_text)
+                cond_text = re.sub(r'\s*\)?\s*$', '', cond_text)
+                # Clean up: remove any line number patterns like "L123:" that might be in the text
+                cond_text = re.sub(r'L\d+:\s*', '', cond_text)
+                # Remove any duplicate words (simple deduplication)
+                words = cond_text.split()
+                seen = set()
+                unique_words = []
+                for word in words:
+                    if word not in seen:
+                        seen.add(word)
+                        unique_words.append(word)
+                cond_text = ' '.join(unique_words)
+                if cond_text:
+                    # Limit to first 80 chars
+                    return cond_text[:80]
+        
+        return "condition"
 
     def _process_if_statement(self, if_node):
         """Process if statement"""
@@ -284,14 +343,15 @@ class CFGGenerator:
     def _process_while_statement(self, while_node):
         """Process while loop"""
         cond_line = while_node.condition.position.line if while_node.condition.position else "?"
-        cond_text = self._get_statement_text(cond_line)
+        cond_text = self._extract_condition_text(while_node.condition)
         
         # Check if loop never runs (always false condition)
         never_runs = self._is_always_false_condition(while_node.condition)
         
         if never_runs:
             # Loop never runs - create nodes but don't connect them with arrows
-            cond_block = self._new_block(f"WHILE CONDITION\nL{cond_line}: {cond_text}")
+            line_label = f"L{cond_line}: " if cond_line != "?" else ""
+            cond_block = self._new_block(f"WHILE CONDITION\n{line_label}{cond_text}")
             body_block = self._new_block("LOOP BODY")
             
             # Process body to create its nodes (but don't connect)
@@ -314,7 +374,8 @@ class CFGGenerator:
         if not is_infinite:
             is_infinite = self._is_infinite_loop_condition(while_node.condition)
         
-        cond_block = self._new_block(f"WHILE CONDITION\nL{cond_line}: {cond_text}")
+        line_label = f"L{cond_line}: " if cond_line != "?" else ""
+        cond_block = self._new_block(f"WHILE CONDITION\n{line_label}{cond_text}")
         
         # Connect current block to condition
         self._connect_blocks(self.current_block, cond_block)
@@ -367,12 +428,14 @@ class CFGGenerator:
         elif has_condition:
             # Standard for loop with condition
             cond_line = for_node.control.condition.position.line if for_node.control.condition.position else "?"
-            cond_text = self._get_statement_text(cond_line) if cond_line != "?" else "true"
+            cond_text = self._extract_condition_text(for_node.control.condition)
         else:
             # Infinite loop (no condition)
+            cond_line = for_node.position.line if for_node.position else "?"
             cond_text = "true"
         
-        cond_block = self._new_block(f"FOR CONDITION\nL{cond_line}: {cond_text}")
+        line_label = f"L{cond_line}: " if cond_line != "?" else ""
+        cond_block = self._new_block(f"FOR CONDITION\n{line_label}{cond_text}")
         self._connect_blocks(init_block, cond_block)
         
         # Check if loop never runs (always false condition)
@@ -457,7 +520,7 @@ class CFGGenerator:
     def _process_do_statement(self, do_node):
         """Process do-while loop"""
         cond_line = do_node.condition.position.line if do_node.condition.position else "?"
-        cond_text = self._get_statement_text(cond_line)
+        cond_text = self._extract_condition_text(do_node.condition)
         
         # Check if loop never runs after first iteration (always false condition)
         never_runs = self._is_always_false_condition(do_node.condition)
@@ -470,7 +533,8 @@ class CFGGenerator:
         
         if never_runs:
             # Loop never runs after first iteration - create nodes but don't loop back
-            cond_block = self._new_block(f"DO-WHILE CONDITION\nL{cond_line}: {cond_text}")
+            line_label = f"L{cond_line}: " if cond_line != "?" else ""
+            cond_block = self._new_block(f"DO-WHILE CONDITION\n{line_label}{cond_text}")
             
             # Process body to create its nodes
             saved_block = self.current_block
@@ -492,7 +556,8 @@ class CFGGenerator:
         self._process_statement(do_node.body)
         
         # Create condition block
-        cond_block = self._new_block(f"DO-WHILE CONDITION\nL{cond_line}: {cond_text}")
+        line_label = f"L{cond_line}: " if cond_line != "?" else ""
+        cond_block = self._new_block(f"DO-WHILE CONDITION\n{line_label}{cond_text}")
         # Connect body to condition (always executed after body)
         self._connect_blocks(body_block, cond_block)
         
@@ -675,13 +740,20 @@ class CFGGenerator:
                 # Also check for compound assignments like +=, -=, etc.
                 elif hasattr(expr.expressionl, 'member'):
                     modified.add(expr.expressionl.member)
-            # Check for increment/decrement operations
-            # In javalang, postfix/prefix operations (i++, ++i) are typically represented
-            # as assignments or as expressions. We check for MemberReference with operators
+            # Check for increment/decrement operations (postfix/prefix)
+            # In javalang, postfix/prefix operations (i++, ++i, i--, --i) are represented
+            # as MemberReference with postfix_operators or prefix_operators attributes
             elif isinstance(expr, javalang.tree.MemberReference):
-                # This could be a postfix operation - check if there are operators
-                # For now, we'll be conservative and not mark it unless we're sure
-                pass
+                # Check for postfix operators (a++, a--)
+                if hasattr(expr, 'postfix_operators') and expr.postfix_operators:
+                    # postfix_operators is a list like ['++'] or ['--']
+                    if expr.member:
+                        modified.add(expr.member)
+                # Check for prefix operators (++a, --a)
+                elif hasattr(expr, 'prefix_operators') and expr.prefix_operators:
+                    # prefix_operators is a list like ['++'] or ['--']
+                    if expr.member:
+                        modified.add(expr.member)
             # Check if expression has attributes that suggest modification
             # Some versions of javalang might represent these differently
             elif hasattr(expr, 'expressionl'):
@@ -723,6 +795,21 @@ class CFGGenerator:
                     return True, "Always true comparison"
                 if op == "!=" and left_val != right_val:
                     return True, "Always true comparison"
+                # Check numeric comparisons that are always true
+                try:
+                    left_num = float(left_val) if left_val.replace('.', '').replace('-', '').isdigit() else None
+                    right_num = float(right_val) if right_val.replace('.', '').replace('-', '').isdigit() else None
+                    if left_num is not None and right_num is not None:
+                        if op == "<" and left_num < right_num:
+                            return True, "Always true comparison"
+                        if op == ">" and left_num > right_num:
+                            return True, "Always true comparison"
+                        if op == "<=" and left_num <= right_num:
+                            return True, "Always true comparison"
+                        if op == ">=" and left_num >= right_num:
+                            return True, "Always true comparison"
+                except:
+                    pass
         
         # Extract variables from condition
         condition_vars = self._extract_variables_from_expression(condition_node)
@@ -742,14 +829,19 @@ class CFGGenerator:
                     return True, "Always true pattern"
             return False, "No variables to analyze"
         
-        # Extract modified variables from loop body
+        # Extract modified variables from loop body and track modification types
         modified_vars = set()
+        modification_directions = {}  # Track if variables are incremented/decremented
+        
         if loop_body:
             if isinstance(loop_body, javalang.tree.BlockStatement):
                 for stmt in loop_body.statements:
                     modified_vars.update(self._extract_modified_variables(stmt))
+                    # Analyze modification direction
+                    self._analyze_modification_direction(stmt, modification_directions)
             else:
                 modified_vars.update(self._extract_modified_variables(loop_body))
+                self._analyze_modification_direction(loop_body, modification_directions)
         
         # Check if any condition variable is modified
         condition_vars_modified = condition_vars.intersection(modified_vars)
@@ -760,10 +852,8 @@ class CFGGenerator:
             return True, f"Condition variables {condition_vars} not modified in loop body"
         
         # Analyze the direction of modification relative to condition
-        # This is a simplified analysis - we check if the modification could lead to termination
         # For example: while (i > 0) with i++ would be infinite, but i-- would terminate
         
-        # Get condition operator and operands
         if isinstance(condition_node, javalang.tree.BinaryOperation):
             op = condition_node.operator
             left = condition_node.operandl
@@ -773,19 +863,110 @@ class CFGGenerator:
             if isinstance(left, javalang.tree.MemberReference) and isinstance(right, javalang.tree.Literal):
                 var_name = left.member
                 if var_name in condition_vars_modified:
-                    # Check modification direction (simplified - would need deeper analysis)
-                    # For now, if variable is modified, assume it might terminate
-                    # unless we can prove otherwise
-                    return False, f"Variable {var_name} is modified"
+                    # Analyze modification direction
+                    mod_dir = modification_directions.get(var_name, "unknown")
+                    right_val = str(right.value)
+                    
+                    # For > operator: variable > constant
+                    # If variable is only incremented, condition stays true (infinite)
+                    if op == ">" or op == ">=":
+                        if mod_dir == "increment":
+                            return True, f"Variable {var_name} is incremented, condition {var_name} {op} {right_val} stays true"
+                        elif mod_dir == "decrement":
+                            return False, f"Variable {var_name} is decremented, condition {var_name} {op} {right_val} can become false"
+                    
+                    # For < operator: variable < constant
+                    # If variable is only decremented, condition stays true (infinite)
+                    if op == "<" or op == "<=":
+                        if mod_dir == "decrement":
+                            return True, f"Variable {var_name} is decremented, condition {var_name} {op} {right_val} stays true"
+                        elif mod_dir == "increment":
+                            return False, f"Variable {var_name} is incremented, condition {var_name} {op} {right_val} can become false"
             
             # Check if right is a variable and left is a constant
             if isinstance(right, javalang.tree.MemberReference) and isinstance(left, javalang.tree.Literal):
                 var_name = right.member
                 if var_name in condition_vars_modified:
-                    return False, f"Variable {var_name} is modified"
+                    mod_dir = modification_directions.get(var_name, "unknown")
+                    left_val = str(left.value)
+                    
+                    # For > operator: constant > variable
+                    # If variable is only decremented, condition stays true (infinite)
+                    if op == ">":
+                        if mod_dir == "decrement":
+                            return True, f"Variable {var_name} is decremented, condition {left_val} {op} {var_name} stays true"
+                        elif mod_dir == "increment":
+                            return False, f"Variable {var_name} is incremented, condition {left_val} {op} {var_name} can become false"
+                    
+                    # For < operator: constant < variable
+                    # If variable is only incremented, condition stays true (infinite)
+                    if op == "<":
+                        if mod_dir == "increment":
+                            return True, f"Variable {var_name} is incremented, condition {left_val} {op} {var_name} stays true"
+                        elif mod_dir == "decrement":
+                            return False, f"Variable {var_name} is decremented, condition {left_val} {op} {var_name} can become false"
         
         # If we can't determine, assume it might terminate (conservative approach)
         return False, "Unable to determine - assuming might terminate"
+    
+    def _analyze_modification_direction(self, stmt, modification_directions):
+        """Analyze if a statement increments or decrements variables"""
+        if isinstance(stmt, javalang.tree.StatementExpression):
+            expr = stmt.expression
+            if isinstance(expr, javalang.tree.Assignment):
+                # Check assignment operators (compound assignments like +=, -=)
+                if hasattr(expr, 'operator'):
+                    op = expr.operator
+                    if isinstance(expr.expressionl, javalang.tree.MemberReference):
+                        var_name = expr.expressionl.member
+                        if op == "+=":
+                            modification_directions[var_name] = "increment"
+                        elif op == "-=":
+                            modification_directions[var_name] = "decrement"
+                
+                # Check for assignments like a = a + 1 or a = a - 1 (regular assignments)
+                # This handles both cases: with operator="=" and without operator attribute
+                if isinstance(expr.expressionl, javalang.tree.MemberReference) and \
+                   isinstance(expr.value, javalang.tree.BinaryOperation):
+                    var_name = expr.expressionl.member
+                    bin_op = expr.value
+                    # Check if it's a = a + constant or a = a - constant
+                    if isinstance(bin_op.operandl, javalang.tree.MemberReference) and \
+                       bin_op.operandl.member == var_name and \
+                       isinstance(bin_op.operandr, javalang.tree.Literal):
+                        if bin_op.operator == "+":
+                            # a = a + constant (increment)
+                            modification_directions[var_name] = "increment"
+                        elif bin_op.operator == "-":
+                            # a = a - constant (decrement)
+                            modification_directions[var_name] = "decrement"
+                    # Check if it's a = constant + a or a = constant - a
+                    elif isinstance(bin_op.operandr, javalang.tree.MemberReference) and \
+                         bin_op.operandr.member == var_name and \
+                         isinstance(bin_op.operandl, javalang.tree.Literal):
+                        if bin_op.operator == "+":
+                            # a = constant + a (increment, but direction depends on constant)
+                            # For simplicity, treat as increment
+                            modification_directions[var_name] = "increment"
+                        elif bin_op.operator == "-":
+                            # a = constant - a (this is unusual, but would be decrement-like)
+                            modification_directions[var_name] = "decrement"
+            elif isinstance(expr, javalang.tree.MemberReference):
+                # Check for postfix/prefix increment/decrement
+                var_name = expr.member
+                if hasattr(expr, 'postfix_operators') and expr.postfix_operators:
+                    if '++' in expr.postfix_operators:
+                        modification_directions[var_name] = "increment"
+                    elif '--' in expr.postfix_operators:
+                        modification_directions[var_name] = "decrement"
+                elif hasattr(expr, 'prefix_operators') and expr.prefix_operators:
+                    if '++' in expr.prefix_operators:
+                        modification_directions[var_name] = "increment"
+                    elif '--' in expr.prefix_operators:
+                        modification_directions[var_name] = "decrement"
+        elif isinstance(stmt, javalang.tree.BlockStatement):
+            for sub_stmt in stmt.statements:
+                self._analyze_modification_direction(sub_stmt, modification_directions)
     
     def _is_always_false_condition(self, condition_node):
         """Check if a condition is always false (loop never runs)"""
