@@ -487,14 +487,22 @@ class CFGGenerator:
         elif isinstance(expr, javalang.tree.BinaryOperation):
             variables.update(self._extract_variables_from_expression(expr.operandl))
             variables.update(self._extract_variables_from_expression(expr.operandr))
-        elif isinstance(expr, javalang.tree.UnaryOperation):
-            variables.update(self._extract_variables_from_expression(expr.operand))
+        elif hasattr(javalang.tree, 'UnaryExpression') and isinstance(expr, javalang.tree.UnaryExpression):
+            # Handle unary expressions if they exist
+            if hasattr(expr, 'operand'):
+                variables.update(self._extract_variables_from_expression(expr.operand))
         elif isinstance(expr, javalang.tree.Cast):
             if expr.expression:
                 variables.update(self._extract_variables_from_expression(expr.expression))
         elif isinstance(expr, javalang.tree.MethodInvocation):
             # Method calls might modify state, but we'll focus on direct variable access
             pass
+        elif isinstance(expr, javalang.tree.Assignment):
+            # Assignment expressions - extract from both sides
+            if hasattr(expr, 'expressionl'):
+                variables.update(self._extract_variables_from_expression(expr.expressionl))
+            if hasattr(expr, 'value'):
+                variables.update(self._extract_variables_from_expression(expr.value))
         
         return variables
     
@@ -508,10 +516,24 @@ class CFGGenerator:
                 # Extract left-hand side variable
                 if isinstance(expr.expressionl, javalang.tree.MemberReference):
                     modified.add(expr.expressionl.member)
-            elif isinstance(expr, (javalang.tree.PostfixExpression, javalang.tree.PrefixExpression)):
-                # Postfix/prefix operations like i++, --j
-                if isinstance(expr.expression, javalang.tree.MemberReference):
-                    modified.add(expr.expression.member)
+                # Also check for compound assignments like +=, -=, etc.
+                elif hasattr(expr.expressionl, 'member'):
+                    modified.add(expr.expressionl.member)
+            # Check for increment/decrement operations
+            # In javalang, postfix/prefix operations (i++, ++i) are typically represented
+            # as assignments or as expressions. We check for MemberReference with operators
+            elif isinstance(expr, javalang.tree.MemberReference):
+                # This could be a postfix operation - check if there are operators
+                # For now, we'll be conservative and not mark it unless we're sure
+                pass
+            # Check if expression has attributes that suggest modification
+            # Some versions of javalang might represent these differently
+            elif hasattr(expr, 'expressionl'):
+                if isinstance(expr.expressionl, javalang.tree.MemberReference):
+                    modified.add(expr.expressionl.member)
+            elif hasattr(expr, 'expression') and isinstance(expr.expression, javalang.tree.MemberReference):
+                # This might be a unary operation (prefix/postfix)
+                modified.add(expr.expression.member)
         elif isinstance(stmt, javalang.tree.BlockStatement):
             for sub_stmt in stmt.statements:
                 modified.update(self._extract_modified_variables(sub_stmt))
