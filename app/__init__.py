@@ -97,21 +97,24 @@ def create_app(config_class=Config):
 
         tokenizer = AutoTokenizer.from_pretrained(
             MODEL_PATH,
-            model_max_length=512,
+            model_max_length=64,  # Further reduced for faster processing
             truncation=True,
             padding="max_length"
         )
         model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_PATH)
 
+        # Optimize for speed: use greedy decoding (num_beams=1) and shorter max_length
+        # Enable batch processing for faster inference
         app.hf_pipeline = hf_pipeline( # Store the pipeline on the app object
             "text2text-generation",
             model=model,
             tokenizer=tokenizer,
             device=DEVICE,
-            max_length=512,
+            max_length=64,  # Further reduced for faster generation (comments are usually short)
             truncation=True,
-            num_beams=4,
-            no_repeat_ngram_size=3
+            num_beams=1,  # Greedy decoding (faster than beam search with num_beams=4)
+            do_sample=False,  # Deterministic generation
+            early_stopping=True
         )
         print("Hugging Face pipeline initialized successfully.")
     except Exception as e:

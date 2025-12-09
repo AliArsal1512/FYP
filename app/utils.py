@@ -1,6 +1,7 @@
 # app/utils.py
 import javalang
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import current_app # To access app.hf_pipeline
 
 def preprocess_code(code: str) -> str:
@@ -339,28 +340,72 @@ def build_ast_json(java_code: str) -> dict:
         class_structure = extract_classes(java_code)
         method_structure = extract_methods(java_code)
         
-        # Generate comments for classes
-        class_comments = {}
-        for class_name, class_code in class_structure.items():
-            if not isinstance(class_code, str):  # Skip error responses
-                continue
-            processed_class = preprocess_code(class_code)
-            if current_app.hf_pipeline:
-                result = current_app.hf_pipeline(processed_class)
-                comment = clean_comment(result[0]['generated_text'])
-                class_comments[class_name] = comment
+        # Get pipeline reference before processing
+        hf_pipeline = current_app.hf_pipeline
         
-        # Generate comments for methods
+        # Generate comments using batch processing for maximum speed
+        class_comments = {}
         method_comments = {}
-        for class_name, methods in method_structure.items():
-            if not isinstance(methods, list):  # Skip error responses
-                continue
-            for method in methods:
-                processed_method = preprocess_code(method['code'])
-                if current_app.hf_pipeline:
-                    result = current_app.hf_pipeline(processed_method)
-                    comment = clean_comment(result[0]['generated_text'])
-                    method_comments[(class_name, method['name'])] = comment
+        
+        if hf_pipeline:
+            # Prepare all inputs for batch processing
+            all_inputs = []
+            input_mapping = []  # Track which input corresponds to which class/method
+            
+            # Add classes
+            for class_name, class_code in class_structure.items():
+                if isinstance(class_code, str):
+                    processed_class = preprocess_code(class_code)
+                    all_inputs.append(processed_class)
+                    input_mapping.append(('class', class_name, None))
+            
+            # Add methods
+            for class_name, methods in method_structure.items():
+                if isinstance(methods, list):
+                    for method in methods:
+                        processed_method = preprocess_code(method['code'])
+                        all_inputs.append(processed_method)
+                        input_mapping.append(('method', class_name, method['name']))
+            
+            # Process in batches (model can handle multiple inputs at once)
+            if all_inputs:
+                try:
+                    # Process all inputs in one batch call (much faster than individual calls)
+                    batch_results = hf_pipeline(all_inputs, batch_size=min(8, len(all_inputs)))
+                    
+                    # Map results back to classes/methods
+                    for idx, (input_type, class_name, method_name) in enumerate(input_mapping):
+                        if idx < len(batch_results):
+                            result = batch_results[idx]
+                            comment = clean_comment(result['generated_text'])
+                            
+                            if input_type == 'class':
+                                class_comments[class_name] = comment
+                            else:  # method
+                                method_comments[(class_name, method_name)] = comment
+                except Exception as e:
+                    # Fallback to sequential if batch fails
+                    print(f"Batch processing failed, falling back to sequential: {e}")
+                    for class_name, class_code in class_structure.items():
+                        if isinstance(class_code, str):
+                            try:
+                                processed_class = preprocess_code(class_code)
+                                result = hf_pipeline(processed_class)
+                                comment = clean_comment(result[0]['generated_text'])
+                                class_comments[class_name] = comment
+                            except Exception as e2:
+                                print(f"Error generating AST comment for class {class_name}: {e2}")
+                    
+                    for class_name, methods in method_structure.items():
+                        if isinstance(methods, list):
+                            for method in methods:
+                                try:
+                                    processed_method = preprocess_code(method['code'])
+                                    result = hf_pipeline(processed_method)
+                                    comment = clean_comment(result[0]['generated_text'])
+                                    method_comments[(class_name, method['name'])] = comment
+                                except Exception as e2:
+                                    print(f"Error generating AST comment for method {class_name}.{method['name']}: {e2}")
 
         # Build AST with comments
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):

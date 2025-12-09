@@ -6,6 +6,8 @@ import os
 import networkx as nx
 from graphviz import Digraph
 from werkzeug import Response
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+import multiprocessing
 from ..cfg_utils import CFGGenerator 
 from app.cfg_utils import CFGGenerator
 import javalang # For JavaSyntaxError
@@ -98,28 +100,80 @@ def home():
                 ast_output = format_ast(code_input) #
                 grouped_comments = {} #
 
-                # Use the structures already extracted
-                for class_name, class_code in class_structure.items(): #
-                    processed_class = preprocess_code(class_code) #
-                    if current_app.hf_pipeline: #
-                        result = current_app.hf_pipeline(processed_class) #
-                        comment = clean_comment(result[0]['generated_text']) #
-                        grouped_comments[class_name] = { #
-                            'class_comment': f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>',
-                            'method_comments': []
-                        }
-
-                for class_name, methods in method_structure.items(): #
-                    if class_name not in grouped_comments: # Handle classes with no direct code but with methods
+                # Batch processing for faster comment generation
+                # Get pipeline reference before processing
+                hf_pipeline = current_app.hf_pipeline
+                
+                # Initialize grouped_comments structure
+                for class_name in class_structure.keys():
+                    grouped_comments[class_name] = {'class_comment': '', 'method_comments': []}
+                for class_name in method_structure.keys():
+                    if class_name not in grouped_comments:
                         grouped_comments[class_name] = {'class_comment': '', 'method_comments': []}
-                    for method in methods: #
-                        processed_method = preprocess_code(method['code']) #
-                        if current_app.hf_pipeline: #
-                            result = current_app.hf_pipeline(processed_method) #
-                            comment = clean_comment(result[0]['generated_text']) #
-                            grouped_comments[class_name]['method_comments'].append( #
-                                f'<div class="comment-method" id="method_{class_name}_{method["name"]}">◆ {class_name}.{method["name"]}:\n{comment}</div>'
-                            )
+
+                # Batch process all classes and methods together for maximum speed
+                if hf_pipeline:
+                    # Prepare all inputs for batch processing
+                    all_inputs = []
+                    input_mapping = []  # Track which input corresponds to which class/method
+                    
+                    # Add classes
+                    for class_name, class_code in class_structure.items():
+                        processed_class = preprocess_code(class_code)
+                        all_inputs.append(processed_class)
+                        input_mapping.append(('class', class_name, None))
+                    
+                    # Add methods
+                    for class_name, methods in method_structure.items():
+                        for method in methods:
+                            processed_method = preprocess_code(method['code'])
+                            all_inputs.append(processed_method)
+                            input_mapping.append(('method', class_name, method['name']))
+                    
+                    # Process in batches (model can handle multiple inputs at once)
+                    if all_inputs:
+                        try:
+                            # Process all inputs in one batch call (much faster than individual calls)
+                            batch_results = hf_pipeline(all_inputs, batch_size=min(8, len(all_inputs)))
+                            
+                            # Map results back to classes/methods
+                            for idx, (input_type, class_name, method_name) in enumerate(input_mapping):
+                                if idx < len(batch_results):
+                                    result = batch_results[idx]
+                                    comment = clean_comment(result['generated_text'])
+                                    
+                                    if input_type == 'class':
+                                        grouped_comments[class_name]['class_comment'] = \
+                                            f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>'
+                                    else:  # method
+                                        grouped_comments[class_name]['method_comments'].append(
+                                            f'<div class="comment-method" id="method_{class_name}_{method_name}">◆ {class_name}.{method_name}:\n{comment}</div>'
+                                        )
+                        except Exception as e:
+                            # Fallback to sequential if batch fails
+                            current_app.logger.error(f"Batch processing failed, falling back to sequential: {e}")
+                            # Sequential fallback
+                            for class_name, class_code in class_structure.items():
+                                try:
+                                    processed_class = preprocess_code(class_code)
+                                    result = hf_pipeline(processed_class)
+                                    comment = clean_comment(result[0]['generated_text'])
+                                    grouped_comments[class_name]['class_comment'] = \
+                                        f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>'
+                                except Exception as e2:
+                                    print(f"Error generating comment for class {class_name}: {e2}")
+                            
+                            for class_name, methods in method_structure.items():
+                                for method in methods:
+                                    try:
+                                        processed_method = preprocess_code(method['code'])
+                                        result = hf_pipeline(processed_method)
+                                        comment = clean_comment(result[0]['generated_text'])
+                                        grouped_comments[class_name]['method_comments'].append(
+                                            f'<div class="comment-method" id="method_{class_name}_{method["name"]}">◆ {class_name}.{method["name"]}:\n{comment}</div>'
+                                        )
+                                    except Exception as e2:
+                                        print(f"Error generating comment for method {class_name}.{method['name']}: {e2}")
 
                 comments_output_list = [] #
                 for class_data in grouped_comments.values(): #
@@ -288,29 +342,72 @@ def process_folder():
                     class_structure = extract_classes(code_content)
                     method_structure = extract_methods(code_content)
                     
-                    # Generate comments
-                    grouped_comments = {}
-                    for class_name, class_code in class_structure.items():
-                        processed_class = preprocess_code(class_code)
-                        if current_app.hf_pipeline:
-                            result = current_app.hf_pipeline(processed_class)
-                            comment = clean_comment(result[0]['generated_text'])
-                            grouped_comments[class_name] = {
-                                'class_comment': f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>',
-                                'method_comments': []
-                            }
+                    # Get pipeline reference before threading (to avoid context issues)
+                    hf_pipeline = current_app.hf_pipeline
                     
-                    for class_name, methods in method_structure.items():
+                    # Generate comments using parallel processing (reuse helper functions)
+                    def generate_class_comment_folder(class_name, class_code):
+                        """Generate comment for a single class (folder processing)"""
+                        try:
+                            processed_class = preprocess_code(class_code)
+                            if hf_pipeline:
+                                result = hf_pipeline(processed_class)
+                                comment = clean_comment(result[0]['generated_text'])
+                                return class_name, f'<div class="comment-class" id="class_{class_name}">📦 Class: {class_name}\n{comment}</div>'
+                        except Exception as e:
+                            print(f"Error generating comment for class {class_name}: {e}")
+                            return class_name, None
+                        return class_name, None
+
+                    def generate_method_comment_folder(class_name, method):
+                        """Generate comment for a single method (folder processing)"""
+                        try:
+                            processed_method = preprocess_code(method['code'])
+                            if hf_pipeline:
+                                result = hf_pipeline(processed_method)
+                                comment = clean_comment(result[0]['generated_text'])
+                                return (class_name, method['name']), f'<div class="comment-method" id="method_{class_name}_{method["name"]}">◆ {class_name}.{method["name"]}:\n{comment}</div>'
+                        except Exception as e:
+                            print(f"Error generating comment for method {class_name}.{method['name']}: {e}")
+                            return (class_name, method['name']), None
+                        return (class_name, method['name']), None
+
+                    # Initialize grouped_comments structure
+                    grouped_comments = {}
+                    for class_name in class_structure.keys():
+                        grouped_comments[class_name] = {'class_comment': '', 'method_comments': []}
+                    for class_name in method_structure.keys():
                         if class_name not in grouped_comments:
                             grouped_comments[class_name] = {'class_comment': '', 'method_comments': []}
-                        for method in methods:
-                            processed_method = preprocess_code(method['code'])
-                            if current_app.hf_pipeline:
-                                result = current_app.hf_pipeline(processed_method)
-                                comment = clean_comment(result[0]['generated_text'])
-                                grouped_comments[class_name]['method_comments'].append(
-                                    f'<div class="comment-method" id="method_{class_name}_{method["name"]}">◆ {class_name}.{method["name"]}:\n{comment}</div>'
-                                )
+
+                    # Process classes and methods in parallel
+                    max_workers = min(8, len(class_structure) + sum(len(methods) for methods in method_structure.values()))
+                    if max_workers > 0 and hf_pipeline:
+                        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                            # Submit all class comment generation tasks
+                            class_futures = {
+                                executor.submit(generate_class_comment_folder, class_name, class_code): class_name
+                                for class_name, class_code in class_structure.items()
+                            }
+                            
+                            # Submit all method comment generation tasks
+                            method_futures = {
+                                executor.submit(generate_method_comment_folder, class_name, method): (class_name, method['name'])
+                                for class_name, methods in method_structure.items()
+                                for method in methods
+                            }
+                            
+                            # Collect class comments as they complete
+                            for future in as_completed(class_futures):
+                                class_name, comment_html = future.result()
+                                if comment_html:
+                                    grouped_comments[class_name]['class_comment'] = comment_html
+                            
+                            # Collect method comments as they complete
+                            for future in as_completed(method_futures):
+                                (class_name, method_name), comment_html = future.result()
+                                if comment_html:
+                                    grouped_comments[class_name]['method_comments'].append(comment_html)
                     
                     comments_output_list = []
                     for class_data in grouped_comments.values():
