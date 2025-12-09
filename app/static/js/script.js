@@ -28,6 +28,25 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('#mainNavbar').classList.add('navbar-shrink');
   }
 
+  // Animate How It Works section when in view
+  const howSection = document.getElementById('how-it-works');
+  if (howSection) {
+    // Add reveal classes to elements
+    howSection.querySelectorAll('.card, .col-12.text-center, .how-divider').forEach(el => {
+      el.classList.add('reveal');
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal-visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    howSection.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  }
+
   // Only run dashboard code if we're on the dashboard page
   if (document.querySelector('.dashboard-section')) {
     initDashboard();
@@ -157,6 +176,8 @@ function initEditor() {
         // Handle all responses as JSON
         document.getElementById('commentsOutput').innerHTML = data.comments || "No output generated";
         document.getElementById('astOutput').innerHTML = data.ast || "No AST generated";
+        resetAstGraphState(code);
+        preloadGraphicalAst();
 
       } catch (error) {
         console.error('Error:', error);
@@ -192,9 +213,15 @@ function initEditor() {
 // Add after the initEditor function
 let astData = null;
 let isGraphicalView = false;
+let astGraphRendered = false;
+let lastGraphRenderedCode = null;
+let lastSubmittedCode = null;
 
 // Add inside initEditor function
-document.getElementById('switchViewBtn').addEventListener('click', toggleAstView);
+const switchViewBtn = document.getElementById('switchViewBtn');
+if (switchViewBtn) {
+    switchViewBtn.addEventListener('click', toggleAstView);
+}
 
 function toggleAstView() {
     isGraphicalView = !isGraphicalView;
@@ -204,23 +231,38 @@ function toggleAstView() {
 function renderAst() {
     const container = document.getElementById('astTreeContainer');
     const textOutput = document.getElementById('astOutput');
-    
+    if (!container || !textOutput) return;
+
+    const codeForGraph = getCodeForAstGraph();
+    if (lastSubmittedCode !== null && lastGraphRenderedCode && lastGraphRenderedCode !== lastSubmittedCode) {
+        astGraphRendered = false;
+        lastGraphRenderedCode = null;
+    }
+
     if (isGraphicalView) {
         textOutput.style.display = 'none';
         container.style.display = 'block';
-        renderAstTree();
+        if (!astGraphRendered || lastGraphRenderedCode !== codeForGraph) {
+            setAstDownloadState(false);
+            renderAstTree(codeForGraph);
+        } else {
+            updateAstDownloadAvailability();
+        }
     } else {
         container.style.display = 'none';
         textOutput.style.display = 'block';
+        setAstDownloadState(false);
     }
+
+    updateSwitchViewButtonLabel();
 }
 
-async function renderAstTree() {
+async function renderAstTree(codeOverride) {
     const container = document.getElementById('astTreeContainer');
     container.innerHTML = '<div class="text-center mt-5"><div class="spinner-border" role="status"></div></div>';
     
     try {
-        const code = window.editor.getValue();
+        const code = typeof codeOverride === 'string' ? codeOverride : getCodeForAstGraph();
         const response = await fetch('/ast-json', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -229,15 +271,70 @@ async function renderAstTree() {
         
         const data = await response.json();
         astData = data;
+        lastGraphRenderedCode = code;
+        astGraphRendered = true;
         
         if (data.error) {
             container.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            setAstDownloadState(false);
             return;
         }
         
         drawTree(container, data);
+        updateAstDownloadAvailability();
     } catch (error) {
         container.innerHTML = `<div class="alert alert-danger">Error loading AST: ${error.message}</div>`;
+        setAstDownloadState(false);
+        astGraphRendered = false;
+    }
+}
+
+function getCodeForAstGraph() {
+    if (lastSubmittedCode !== null) {
+        return lastSubmittedCode;
+    }
+    if (window.editor) {
+        return window.editor.getValue();
+    }
+    const hiddenCode = document.getElementById('hiddenCode');
+    return hiddenCode ? hiddenCode.value : '';
+}
+
+function updateSwitchViewButtonLabel() {
+    const btn = document.getElementById('switchViewBtn');
+    if (!btn) return;
+    btn.textContent = isGraphicalView ? 'Switch to Text View' : 'Switch to Graphical View';
+}
+
+function resetAstGraphState(submittedCode) {
+    astGraphRendered = false;
+    astData = null;
+    lastGraphRenderedCode = null;
+    if (typeof submittedCode === 'string') {
+        lastSubmittedCode = submittedCode;
+    }
+
+    const container = document.getElementById('astTreeContainer');
+    const textOutput = document.getElementById('astOutput');
+    if (container) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+    }
+    if (textOutput) {
+        textOutput.style.display = 'block';
+    }
+    isGraphicalView = false;
+    setAstDownloadState(false);
+    updateSwitchViewButtonLabel();
+}
+
+async function preloadGraphicalAst() {
+    if (!lastSubmittedCode) return;
+    if (astGraphRendered && lastGraphRenderedCode === lastSubmittedCode) return;
+    try {
+        await renderAstTree(lastSubmittedCode);
+    } catch (error) {
+        console.error('AST preload failed:', error);
     }
 }
 
@@ -257,8 +354,12 @@ function drawTree(container, rootNode) {
   container.innerHTML = '';
 
   // ---- dimensions ----
-  const width = container.clientWidth || 1000;
-  const height = container.clientHeight || 700;
+  const parentWidth = container.parentElement ? container.parentElement.clientWidth : 0;
+  const containerStyles = window.getComputedStyle(container);
+  const computedWidth = parseFloat(containerStyles.width) || 0;
+  const computedHeight = parseFloat(containerStyles.height) || 0;
+  const width = container.clientWidth || parentWidth || computedWidth || 1000;
+  const height = container.clientHeight || computedHeight || 600;
   const margin = { top: 20, right: 40, bottom: 20, left: 40 };
 
   // ---- create svg + main group ----
@@ -267,7 +368,11 @@ function drawTree(container, rootNode) {
     .attr('width', width)
     .attr('height', height);
 
-  const g = svg.append('g')
+  const zoomLayer = svg.append('g')
+    .attr('class', 'ast-zoom-layer');
+
+  const g = zoomLayer.append('g')
+    .attr('class', 'ast-tree-root')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
   // ---- text measurement helper ----
@@ -383,11 +488,12 @@ function drawTree(container, rootNode) {
   nodeG.filter(d => d.data.comment && d.data.comment !== "No comment available")
         .append('circle')
         .attr('class', 'comment-indicator')
-        .attr('r', 6)
+        .attr('r', 10)
         .attr('fill', '#ff9900')
         .attr('transform', d => {
             const textW = Math.ceil(measureTextWidth(d.data.name || '', fontSize));
-            return `translate(${Math.max(18, Math.ceil(textW / 2) + horizontalPadding + 10)}, -6)`;
+            const offset = Math.max(24, Math.ceil(textW / 2) + horizontalPadding + 16);
+            return `translate(${offset}, -8)`;
         })
         .style('cursor', 'pointer')
         .on('click', function(event, d) {
@@ -399,7 +505,7 @@ function drawTree(container, rootNode) {
   const zoom = d3.zoom()
     .scaleExtent([0.1, 4])
     .on('zoom', (event) => {
-      g.attr('transform', event.transform);
+      zoomLayer.attr('transform', event.transform);
     });
 
   svg.call(zoom);
@@ -799,6 +905,7 @@ async function generateCFG() {
         cfgLoading.style.display = 'flex';
         cfgImage.src = '';
         cfgImage.alt = 'Generating CFG...';
+        setCfgDownloadState(false);
 
         const response = await fetch('/generate-cfg', {
             method: 'POST',
@@ -813,9 +920,16 @@ async function generateCFG() {
             throw new Error(await response.text());
         }
 
-        // Get SVG blob and create object URL
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
+        const svgText = await response.text();
+        latestCfgSvgText = svgText;
+
+        if (currentCfgObjectUrl) {
+            URL.revokeObjectURL(currentCfgObjectUrl);
+            currentCfgObjectUrl = null;
+        }
+
+        const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' }));
+        currentCfgObjectUrl = url;
         
         // Display CFG image
         cfgImage.src = url;
@@ -824,10 +938,12 @@ async function generateCFG() {
         // Reset zoom and pan when new image loads
         cfgImage.onload = function() {
             resetZoom();
+            setCfgDownloadState(true);
         };
         
     } catch (error) {
         console.error("CFG Error:", error);
+        latestCfgSvgText = null;
         const cfgContainer = document.getElementById('cfgContainer');
         cfgContainer.innerHTML = `
             <div class="card-body text-center text-danger">
@@ -837,6 +953,9 @@ async function generateCFG() {
     } finally {
         cfgLoading.style.display = 'none';
         cfgBtn.disabled = false;
+        if (!cfgImage.src) {
+          setCfgDownloadState(false);
+        }
     }
 }
 
@@ -940,6 +1059,9 @@ function handleCFGError(error) {
 
 // Global variable to store the file structure
 let fileStructure = {};
+let selectedFilePath = null;
+let latestCfgSvgText = null;
+let currentCfgObjectUrl = null;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -955,12 +1077,30 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   if (document.getElementById('closeSidebar')) {
-    document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
+    document.getElementById('closeSidebar').addEventListener('click', closeSidebar);
+  }
+  
+  if (document.getElementById('sidebarBackdrop')) {
+    document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
   }
   
   if (document.getElementById('refreshFileTree')) {
     document.getElementById('refreshFileTree').addEventListener('click', refreshFileTree);
   }
+
+  const downloadCfgBtn = document.getElementById('downloadCfgBtn');
+  if (downloadCfgBtn) {
+    downloadCfgBtn.addEventListener('click', downloadCfgImage);
+    downloadCfgBtn.disabled = true;
+  }
+
+  const downloadAstBtn = document.getElementById('downloadAstBtn');
+  if (downloadAstBtn) {
+    downloadAstBtn.addEventListener('click', downloadAstImage);
+    downloadAstBtn.disabled = true;
+  }
+
+  updateSwitchViewButtonLabel();
 });
 
 // Handle folder upload
@@ -983,11 +1123,13 @@ function handleFolderUpload(e) {
   
   // Show the sidebar
   document.getElementById('fileSidebar').style.display = 'block';
+  openSidebar();
   
   // Read the first Java file and load it into the editor
   const firstJavaFile = findFirstJavaFile(fileStructure);
   if (firstJavaFile) {
     readFileContent(firstJavaFile.file);
+    highlightFileInTree(firstJavaFile.path);
   }
 }
 
@@ -1039,6 +1181,11 @@ function renderFileTree() {
   
   const tree = buildFileTreeHTML(fileStructure);
   fileTreeElement.appendChild(tree);
+  expandAllFolders();
+
+  if (selectedFilePath) {
+    highlightFileInTree(selectedFilePath, { scrollIntoView: false });
+  }
 }
 
 // Build HTML for the file tree
@@ -1084,12 +1231,7 @@ function buildFileTreeHTML(structure, level = 0) {
       // Add click event to load file content
       li.querySelector('.file').addEventListener('click', function() {
         readFileContent(item.file);
-        
-        // Highlight selected file
-        document.querySelectorAll('.file-tree .file').forEach(el => {
-          el.classList.remove('selected');
-        });
-        this.classList.add('selected');
+        highlightFileInTree(item.path);
       });
     }
     
@@ -1112,14 +1254,223 @@ function readFileContent(file) {
   reader.readAsText(file);
 }
 
-// Toggle sidebar visibility
+// Toggle sidebar visibility with smooth animation
 function toggleSidebar() {
   const sidebar = document.getElementById('fileSidebar');
-  if (sidebar.style.display === 'none') {
-    sidebar.style.display = 'block';
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
   } else {
-    sidebar.style.display = 'none';
+    openSidebar();
   }
+}
+
+function openSidebar() {
+  const sidebar = document.getElementById('fileSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('show');
+}
+
+// Close sidebar when clicking backdrop
+function closeSidebar() {
+  const sidebar = document.getElementById('fileSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  
+  sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('show');
+}
+
+function highlightFileInTree(path, options = {}) {
+  selectedFilePath = path;
+  const fileNodes = document.querySelectorAll('.file-tree .file');
+  let targetNode = null;
+
+  fileNodes.forEach(node => {
+    node.classList.remove('selected');
+    if (node.dataset.path === path) {
+      targetNode = node;
+    }
+  });
+
+  if (targetNode) {
+    targetNode.classList.add('selected');
+    if (options.scrollIntoView !== false) {
+      targetNode.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+}
+
+function expandAllFolders() {
+  document.querySelectorAll('.file-tree .folder').forEach(folder => {
+    folder.classList.add('expanded');
+    const children = folder.nextElementSibling;
+    if (children) {
+      children.style.display = 'block';
+    }
+  });
+}
+
+async function downloadCfgImage() {
+  if (!latestCfgSvgText) return;
+  const btn = document.getElementById('downloadCfgBtn');
+  if (btn) btn.disabled = true;
+
+  try {
+    await saveSvgAsPng(latestCfgSvgText, `cfg-${new Date().toISOString()}`);
+  } catch (error) {
+    console.error('Failed to download CFG:', error);
+  } finally {
+    if (btn) btn.disabled = false;
+    setCfgDownloadState(!!latestCfgSvgText);
+  }
+}
+
+async function downloadAstImage() {
+  const container = document.getElementById('astTreeContainer');
+  if (!container || !isGraphicalView) return;
+
+  const svgElement = container.querySelector('svg');
+  if (!svgElement) return;
+
+  const btn = document.getElementById('downloadAstBtn');
+  if (btn) btn.disabled = true;
+
+  try {
+    const svgString = buildAstSvgExportString(svgElement);
+    await saveSvgAsPng(svgString, `graphical-ast-${new Date().toISOString()}`);
+  } catch (error) {
+    console.error('Failed to download AST:', error);
+  } finally {
+    if (btn) btn.disabled = false;
+    updateAstDownloadAvailability();
+  }
+}
+
+function triggerDownload(url, filename) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function parseSvgDimensions(svgText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgText, 'image/svg+xml');
+  const svgEl = doc.documentElement;
+
+  const viewBox = svgEl.getAttribute('viewBox');
+  let vbWidth = null;
+  let vbHeight = null;
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/).map(Number);
+    if (parts.length === 4) {
+      vbWidth = parts[2];
+      vbHeight = parts[3];
+    }
+  }
+
+  const widthAttr = svgEl.getAttribute('width');
+  const heightAttr = svgEl.getAttribute('height');
+  const width = Math.max(1, parseFloat(widthAttr) || vbWidth || 1200);
+  const height = Math.max(1, parseFloat(heightAttr) || vbHeight || 800);
+
+  return { width, height };
+}
+
+function saveSvgAsPng(svgText, filename) {
+  return new Promise((resolve, reject) => {
+    const { width, height } = parseSvgDimensions(svgText);
+    const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const image = new Image();
+    image.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        if (!blob) {
+          URL.revokeObjectURL(url);
+          reject(new Error('Unable to export image'));
+          return;
+        }
+        const downloadUrl = URL.createObjectURL(blob);
+        triggerDownload(downloadUrl, `${filename}.png`);
+        URL.revokeObjectURL(downloadUrl);
+        URL.revokeObjectURL(url);
+        resolve();
+      }, 'image/png');
+    };
+    image.onerror = function(err) {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+    image.src = url;
+  });
+}
+
+function buildAstSvgExportString(svgElement) {
+  const clone = svgElement.cloneNode(true);
+  const hiddenWrapper = document.createElement('div');
+  hiddenWrapper.style.position = 'absolute';
+  hiddenWrapper.style.left = '-9999px';
+  hiddenWrapper.style.top = '-9999px';
+  hiddenWrapper.style.opacity = '0';
+  document.body.appendChild(hiddenWrapper);
+
+  try {
+    hiddenWrapper.appendChild(clone);
+    const zoomLayer = clone.querySelector('.ast-zoom-layer');
+    if (zoomLayer) {
+      zoomLayer.setAttribute('transform', '');
+    }
+    const target = zoomLayer || clone;
+    const bbox = target.getBBox();
+    const padding = 40;
+    const width = Math.max(1, bbox.width + padding * 2);
+    const height = Math.max(1, bbox.height + padding * 2);
+    const minX = bbox.x - padding;
+    const minY = bbox.y - padding;
+
+    clone.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+    clone.setAttribute('width', width);
+    clone.setAttribute('height', height);
+    if (!clone.getAttribute('xmlns')) {
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    }
+
+    return new XMLSerializer().serializeToString(clone);
+  } finally {
+    document.body.removeChild(hiddenWrapper);
+  }
+}
+
+function setCfgDownloadState(isEnabled) {
+  const btn = document.getElementById('downloadCfgBtn');
+  if (btn) {
+    btn.disabled = !isEnabled;
+  }
+}
+
+function setAstDownloadState(isEnabled) {
+  const btn = document.getElementById('downloadAstBtn');
+  if (btn) {
+    btn.disabled = !isEnabled;
+  }
+}
+
+function updateAstDownloadAvailability() {
+  const container = document.getElementById('astTreeContainer');
+  const hasSvg = container && container.querySelector('svg');
+  setAstDownloadState(isGraphicalView && !!hasSvg);
 }
 
 // Refresh file tree

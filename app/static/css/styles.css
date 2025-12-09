@@ -5,15 +5,15 @@ html {
 
 body{
   background-color: rgb(255, 255, 255);
-  color: rgb(37, 37, 37);
-  font-family: "Gill Sans", sans-serif;
+  color: rgb(36, 36, 36);
+  font-family: 'Lexend', sans-serif;
 }
 
 /*components styling*/
 .clarifai-btn{
   background-color: #3b6cff;
-  color: white;
-  padding: 10px 15px;
+  color: white !important;
+  padding: 8px 13px;
   margin-top: 20px;
   border: none;
   border-radius: 10px;
@@ -21,7 +21,12 @@ body{
   position: relative;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
-  font-weight: bold;
+  font-weight: normal !important;
+}
+
+.dashboard-section{
+  padding: 2rem;
+  padding-top: 80px;
 }
 
 .clarifai-btn:hover {
@@ -58,20 +63,29 @@ body{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: bold;
+  font-family: 'Cinzel', serif !important;
+  
+}
+
+.text-gradient{
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Hero Section Styling */
 .hero-section{
-  height: 100vh;
-  background : url(../images/body-bg9.jpg);
+  min-height: 100vh;
+  background : url(../images/body-bg9.png);
   background-size: cover;    /* Make it fill the section */
   background-position: center; /* Center the image */
-  color: white;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  padding-top: 20px;
+  align-items: start;
   text-align: center;
+  padding: 5%;
 }
 
 .hero-section h1 {
@@ -83,27 +97,25 @@ body{
   background-clip: text;
 }
 
-.hero-section p {
-  font-size: 1.7rem;
-  margin-bottom: 60px;
-  background: linear-gradient(to right, #ff0000, #3b6cff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: bold;
-}
-
 .hero-content {
   opacity: 0;
   transform: translateY(30px);
   animation: fadeSlideUp 1s ease-out forwards;
   animation-delay: 0.3s; /* Wait a bit after load */
+  max-width: 700px;
 }
 
 @keyframes fadeSlideUp {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (min-width: 1500px) {
+  .hero-content {
+    max-width: 1000px;
+    margin-top: 20px;
   }
 }
 
@@ -126,30 +138,39 @@ body{
   font-weight: bold;
 }
 
-.get-started-btn {
-  background-color: #3b6cff;
+.hero-buttons {
+  display: flex;
+  margin-top: 3rem;
+  gap: 25px;
+  align-self: center;
+  justify-content: center;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.how-btn {
+  background-color: #0000001a;
   color: white;
-  padding: 14px 30px;
+  padding: 10px 16px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
   border: none;
   border-radius: 10px;
   font-size: 1.35rem;
   cursor: pointer;
-  position: relative;
   transition: background-color 0.3s ease;
   text-decoration: none; /* Remove underline */
-  font-weight: bold;
+  font-weight: normal;
   opacity: 0;
   transform: translateY(30px);
   animation: fadeSlideUp 1s ease-out forwards;
   animation-delay: 1.5s; /* Show after other content */
 }
 
-.get-started-btn:hover {
+.how-btn:hover {
   background-color: #c60303; /* Dark purple */
 }
 
 /* Arrow styling */
-.get-started-btn::after {
+.how-btn::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -160,21 +181,43 @@ body{
   height: 0;
   border-left: 20px solid transparent;
   border-right: 20px solid transparent;
-  border-top: 24px solid #3c011e; /* Arrow color */
+  border-top: 24px solid #3c011d7e; /* Arrow color */
   opacity: 0;
-  transition: opacity 0.3s ease, margin-top 0.3s ease;
+  transition: opacity 0.3s ease, margin-top 0.5s ease;
 }
 
 /* On hover, show the arrow */
-.get-started-btn:hover::after {
+.how-btn:hover::after {
   opacity: 1;
-  margin-top: 20px; /* Increase the space for the larger arrow */
-  border-top-color: #ff0000; /* Change the arrow color to match the new background */
+  margin-top: 15px; /* Increase the space for the larger arrow */
+  border-top-color: #ff00008e; /* Change the arrow color to match the new background */
+}
+
+.try-btn {
+  background-color: #3b6cff;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.35rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none; /* Remove underline */
+  font-weight: normal;
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeSlideUp 1s ease-out forwards;
+  animation-delay: 1.5s; /* Show after other content */
+}
+
+.try-btn:hover {
+  background-color: #c60303; /* Dark purple */
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5)
 }
 
 .login-page, .signup-page {
   height: 100vh;
-  background : url(../images/body-bg9.jpg);
+  background : url(../images/body-bg9.png);
   background-size: cover;    /* Make it fill the section */
   background-position: center; /* Center the image */
   color: rgb(45, 45, 45);
@@ -185,9 +228,15 @@ body{
   text-align: center;
 }
 
+.log-sign-card{
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(248,249,255,1) 0%, rgba(255,255,255,1) 100%) padding-box,
+              linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
+}
+
 /*NavBar Styling*/
 #mainNavbar {
-  padding: 15px 0;
+  padding: 2px 0;
   transition: all 0.3s ease;
   /* Transparent background with blur */
   background: rgba(255, 255, 255, 0.2) !important; /* white with 20% opacity */
@@ -196,7 +245,7 @@ body{
 }
 
 #mainNavbar.navbar-shrink {
-  padding: 10px 0;
+  padding: 2px 0;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
@@ -215,10 +264,10 @@ body{
 
 @media (max-width: 991.98px) {
   #mainNavbar {
-    padding: 15px 0;
+    padding: 8px 0;
   }
   .navbar-shrink {
-    padding: 10px 0 !important;
+    padding: 4px 0 !important;
   }
 }
 
@@ -228,6 +277,7 @@ body{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
   font-size: 1.8rem;
   margin-left: 20px;
   margin-right: 20px;
@@ -240,28 +290,68 @@ body{
   margin-right: 15px;
 }
 
-/* Main Section Styling */
-.main-section {
-  scroll-margin-top: 50px; /* Match your navbar height */
+/* Model Section Styling */
+.model-section {
+  padding-top:70px; /* Match your navbar height */
+}
+
+.hero-divider{
+  margin-top: 4rem;
+  font-family: 'Rochester', cursive;
+  display: flex;
+  display: block;
+}
+
+.hero-divider h2{
+  font-size: 4rem;
+  color: rgba(154, 24, 24, 0.808);
+}
+
+@media (min-width: 1500px) {
+  .hero-divider h2 {
+    font-size: 4.4rem; /* or whatever size you prefer */
+  }
 }
 
 .welcome-text{
-  margin-top: 35px;
+  text-align: left;
 }
 
 .welcome-text h2{
   font-size: 3rem;
 }
 
+
 .welcome-text h3{
   font-size: 2.5rem;
 }
 
 .welcome-text p{
-  font-size: 1.2rem;
-  margin-top: 20px;
-  line-height: 35px;
+  font-size: 1.3rem;
+  margin-top: 15px;
 }
+
+@media (min-width: 1500px) {
+  .welcome-text p {
+    font-size: 1.7rem; /* or whatever size you prefer */
+  }
+}
+
+.welcome-text .punch-line{
+  font-size: 1.7rem;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 12px;
+}
+
+@media (min-width: 1500px) {
+  .welcome-text .punch-line {
+    font-size: 2.1rem; /* or whatever size you prefer */
+  }
+}
+
 
 /* Form Styling */
 .code-form {
@@ -426,6 +516,7 @@ body{
 /* Comment items */
 .ast-tree, .comment-class, .comment-method {
   white-space: pre-wrap;
+  color: black;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -678,17 +769,46 @@ body{
   min-width: 280px;
   background-color: #f8f9fa;
   border-right: 1px solid #dee2e6;
-  height: calc(100vh - 76px);
+  height: 100vh;
   overflow-y: auto;
   position: fixed;
-  top: 76px;
-  transition: all 0.3s ease;
+  top: 50px;
+  left: -280px;
+  transition: left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
   z-index: 60;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+}
+
+.file-sidebar.open {
+  left: 0;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+
+/* Sidebar backdrop overlay */
+.sidebar-backdrop {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar-backdrop.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 .sidebar-header {
   border-bottom: 1px solid #dee2e6;
   background-color: #e9ecef;
+  padding-top: 20px;
+  padding-bottom: 5px;
+  padding-left:10px;
 }
 
 .file-tree {
@@ -713,6 +833,13 @@ body{
   background-color: #e9ecef;
 }
 
+.file-tree .file.selected {
+  background-color: rgba(59, 108, 255, 0.15);
+  color: #1f47ff;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .file-tree .folder::before {
   content: '📁 ';
   margin-right: 4px;
@@ -735,6 +862,7 @@ body{
 #toggleSidebar {
   display: none; /* Initially hidden on mobile */
   position: fixed;
+  opacity: 70%;
   top: 90px;
   left: 10px;
   z-index : 50;
@@ -776,6 +904,172 @@ body{
     fill: #ff6600;
     stroke: #fff;
     stroke-width: 1px;
+}
+
+/* How It Works Section */
+#how-it-works {
+  position: relative;
+  padding-top: 5.5rem;
+  min-height: 100vh;
+  background: linear-gradient(180deg, rgba(248,249,255,0.9) 0%, rgba(255,255,255,0.95) 60%),
+              url('../images/body-bg2.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+#how-it-works h3 {
+  font-size: 3rem;
+  letter-spacing: 0.3px;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+#how-it-works .text-muted {
+  color: #6c757d !important;
+  font-size: 1.1rem;
+}
+
+#how-it-works .how-divider {
+  width: 80px;
+  height: 4px;
+  margin: 12px auto 0;
+  background: linear-gradient(to right, #ff0000, #3b6cff);
+  border-radius: 4px;
+}
+
+/* Reveal-on-scroll utility */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 700ms ease;
+  will-change: transform, opacity;
+}
+
+.reveal-visible {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
+
+/* Step cards */
+#how-it-works .card {
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 600ms cubic-bezier(0.2, 0.8, 0.2, 1), background 400ms ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(248,249,255,1) 0%, rgba(255,255,255,1) 100%) padding-box,
+              linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
+}
+
+#how-it-works .card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 24px 56px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.6) inset, 0 8px 32px rgba(59,108,255,0.15);
+  background: linear-gradient(180deg, rgba(248,249,255,1) 0%, rgba(248,249,255,1) 50%, rgba(255,255,255,1) 100%) padding-box,
+              linear-gradient(135deg, rgba(255,0,0,0.5), rgba(59,108,255,0.5)) border-box;
+}
+
+#how-it-works .card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(1200px 240px at -10% -10%, rgba(255,0,0,0.06), rgba(0,0,0,0) 60%),
+              radial-gradient(900px 200px at 120% 120%, rgba(59,108,255,0.06), rgba(0,0,0,0) 60%);
+  pointer-events: none;
+}
+
+#how-it-works .card::after {
+  /* sheen reflection */
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -30%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(120deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0) 100%);
+  transform: translateX(-120%) rotate(15deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#how-it-works .card:hover::after {
+  opacity: 1;
+  animation: sheen 900ms ease forwards;
+}
+
+@keyframes sheen {
+  to {
+    transform: translateX(220%) rotate(15deg);
+  }
+}
+
+#how-it-works .card-title {
+  font-weight: 700;
+  color: #2b2b2b;
+}
+
+#how-it-works .card-text {
+  color: #495057;
+  line-height: 1.6;
+}
+
+/* Icons for steps */
+#how-it-works .how-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, rgba(255,0,0,0.15), rgba(59,108,255,0.15));
+  box-shadow: inset 0 0 0 1px rgba(59,108,255,0.25);
+}
+
+#how-it-works .how-icon i {
+  font-size: 24px;
+  background: linear-gradient(135deg, #ff0000, #3b6cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle icon-like gradient bullets inside pipeline list */
+#how-it-works ul li {
+  position: relative;
+  padding-left: 28px;
+}
+
+#how-it-works ul li::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff0000, #3b6cff);
+  box-shadow: 0 0 0 3px rgba(59,108,255,0.12);
+}
+
+/* Stagger animations */
+#how-it-works .row.g-4 > [class*="col-"]:nth-child(1) .card { transition-delay: 80ms; }
+#how-it-works .row.g-4 > [class*="col-"]:nth-child(2) .card { transition-delay: 160ms; }
+#how-it-works .row.g-4 > [class*="col-"]:nth-child(3) .card { transition-delay: 240ms; }
+
+/* Pipeline card */
+#how-it-works .card.border-0.bg-white {
+  border-radius: 14px;
+}
+
+#how-it-works ul {
+  margin-bottom: 0;
+}
+
+#how-it-works ul li {
+  margin: 6px 0;
 }
 
 /* Comment tooltip styles */

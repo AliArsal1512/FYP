@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClarifAI - Java Code Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel&display=swap" rel="stylesheet">
+  </head>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+<body>
+    <div class="container-fluid" style="max-width: 1400px; width: 100%;"> 
+      <!-- NavBar -->
+      {% include 'components/navbar.html' %}
+      
+      <!-- Main Section with Sidebar -->
+      <section class="model-section" id="model-section">
+        <!-- Sidebar backdrop -->
+        <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+        <div class="d-flex">
+          <!-- Sidebar for file navigation (initially hidden) -->
+          <div id="fileSidebar" class="file-sidebar">
+            <div class="sidebar-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Explorer</h5>
+              <button id="closeSidebar" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div class="sidebar-content p-2">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">FILES</h6>
+                <button id="refreshFileTree" class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-arrow-clockwise"></i>
+                </button>
+              </div>
+              <div id="fileTree" class="file-tree">
+                <!-- File tree will be populated here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Main content area -->
+          <div class="flex-grow-1">
+            <div class="d-flex flex-column align-items-center p-2">
+              <form action="/" method="POST" class="w-100 code-form" style="max-width: 1400px;">
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label">Java Code Input</label>
+                    <div class="d-flex gap-2">
+                      <input type="file" id="fileUpload" accept=".java" class="d-none">
+                      <input type="file" id="folderUpload" webkitdirectory directory multiple class="d-none">
+                      <label for="fileUpload" class="btn btn-sm clarifai-btn" style="margin: 0; margin-bottom: 10px;">
+                        📁 Upload Java File
+                      </label>
+                      <label for="folderUpload" class="btn btn-sm clarifai-btn" style="margin: 0; margin-bottom: 10px;">
+                        📂 Upload Folder
+                      </label>
+                      <button type="button" id="toggleSidebar" class="btn btn-sm clarifai-btn" style="margin: 0; margin-bottom: 10px;">
+                        <i class="bi bi-folder2-open"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <!-- Hidden input for form submission -->
+                  <textarea name="code" id="hiddenCode" style="display: none;"></textarea>
+                  <!-- Monaco Editor container -->
+                  <div id="editorContainer" style="height: 450px; border: 1px solid #dfdfdf;"></div>
+                </div>
+                <div class="d-flex justify-content-center">
+                  <button type="submit" class="btn btn-primary clarifai-btn">Submit Code</button>
+                </div> 
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Output Section -->
+      <section class="output-section" id="output-section">
+        <div class="container-fluid code-form" style="margin-bottom: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <div class="output-container">
+            <!-- AST Column -->
+            <div class="ast-section d-flex flex-column position-relative">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <label class="form-label mb-0">Generated AST</label>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <button id="downloadAstBtn" class="btn btn-sm clarifai-btn" disabled>
+                    <i class="bi bi-download me-1"></i>Download AST
+                  </button>
+                  <button id="switchViewBtn" class="btn btn-sm clarifai-btn">
+                    Switch to Graphical View
+                  </button>
+                </div>
+              </div>
+              <div id="astLoading" class="loading-overlay">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span class="loading-text">Generating AST...</span>
+              </div>
+              <div class="form-control ast-output ast-error" 
+                  id="astOutput" 
+                  style="font-family: monospace; height: 600px;"
+                  readonly>
+                {{ ast|safe }}
+              </div>
+              <div id="astTreeContainer" style="height: 600px;"></div>
+            </div>
+            <!-- Comments Column -->
+            <div class="comments-section d-flex flex-column position-relative">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <label class="form-label mb-0">Generated Comments</label>
+                <button id="showAllBtn" class="clarifai-btn btn btn-sm">Show All Comments</button>
+              </div>
+              <div id="commentsLoading" class="loading-overlay">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span class="loading-text">Generating comments...</span>
+              </div>
+              <div class="form-control comments-output comment-error" 
+                  id="commentsOutput" 
+                  style="font-family: monospace; height: 600px;"
+                  readonly>
+                {{ comments|safe }}
+              </div>
+            </div>
+            <!-- CFG Section -->
+            <div class="cfg-section col-lg-12 d-flex flex-column position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <label class="form-label mb-0">Control Flow Graph</label>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <button id="generateCfgBtn" class="btn btn-sm clarifai-btn">
+                        Generate CFG
+                    </button>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <button id="downloadCfgBtn" class="btn btn-sm clarifai-btn" disabled>
+                            <i class="bi bi-download me-1"></i>Download CFG
+                        </button>
+                        <div class="btn-group" role="group">
+                            <button id="zoomInBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-in"></i> 
+                            </button>
+                            <button id="zoomOutBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-out"></i> 
+                            </button>
+                            <button id="resetZoomBtn" class="zoom-btn btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-zoom-reset"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="cfgLoading" class="loading-overlay">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <span class="loading-text">Generating CFG...</span>
+                </div>
+                <div id="cfgContainer" class="form-control" style="height: 600px; overflow: auto; position: relative; border: 1px solid #ddd; background-color: white;">
+                    <div id="cfgImageWrapper" style="position: absolute; transform-origin: 0 0;">
+                        <img id="cfgImage" style="display: block; max-width: none;">
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+</body>
+</html>

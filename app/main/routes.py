@@ -16,7 +16,7 @@ from ..models import CodeSubmission, User # from app/models.py
 from .. import db # from app/__init__.py
 from ..utils import ( # from app/utils.py
     preprocess_code, format_ast, clean_comment,
-    extract_methods, extract_classes, compute_hash, build_ast_json
+    extract_methods, extract_classes, compute_hash, build_ast_json, wrap_code_if_needed
 )
 
 @main_bp.route('/generate-cfg', methods=['POST'])
@@ -42,8 +42,23 @@ def generate_cfg():
         return jsonify({"error": str(e)}), 400
 
 @main_bp.route('/', methods=['GET', 'POST'])
-@login_required
 def home():
+    if request.method == 'GET':
+        if current_user.is_authenticated:
+            return redirect(url_for('main.dashboard'))
+        return render_template(
+            'index.html',
+            comments='',
+            ast='',
+            code_input=''
+        )
+
+    # Guard POST requests so only authenticated users may submit code
+    if not current_user.is_authenticated:
+        if request.is_json:
+            return jsonify({'error': 'Authentication required'}), 401
+        return redirect(url_for('auth.login'))
+
     if request.method == 'POST':
         try:
             code_input = request.json.get('code', '') #
@@ -65,8 +80,11 @@ def home():
                 ast_output = existing_submission.ast_content #
                 comments_output = existing_submission.comments_content #
             else:
+                # Wrap code in class if needed (handled in utils functions)
+                # Try parsing to catch any remaining errors
                 try:
-                    javalang.parse.parse(code_input) #
+                    wrapped_code, was_wrapped = wrap_code_if_needed(code_input)
+                    javalang.parse.parse(wrapped_code)
                 except javalang.parser.JavaSyntaxError as e: #
                     line_number = getattr(e.at, 'line', 'unknown') #
                     return jsonify({ #
@@ -153,13 +171,6 @@ def home():
                 'cfg_supported': False  # Indicate CFG generation is not supported
             }), 500
 
-    # GET request
-    return render_template( #
-        'index.html',
-        comments='',
-        ast='',
-        code_input=''
-    )
 
 
 @main_bp.route('/dashboard') #
@@ -330,3 +341,7 @@ def process_folder():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@main_bp.route("/model")
+def model_page():
+    return render_template("model.html")
