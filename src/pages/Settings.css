@@ -1,0 +1,24 @@
+.settings-section {
+  padding: 2rem;
+}
+
+.card-header-red {
+  background: #ff0000 !important;
+  border: none;
+  padding: 12px 20px;
+}
+
+.card-body {
+  padding: 30px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .card-body p {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-muted {
+  color: var(--text-secondary) !important;
+}
+

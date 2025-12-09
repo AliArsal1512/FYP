@@ -9,7 +9,7 @@ from werkzeug import Response
 from ..cfg_utils import CFGGenerator 
 from app.cfg_utils import CFGGenerator
 import javalang # For JavaSyntaxError
-from flask import app, render_template, request, jsonify, redirect, url_for, current_app, flash
+from flask import app, request, jsonify, redirect, url_for, current_app, flash, send_from_directory
 from flask_login import login_required, current_user, logout_user
 from . import main_bp # from app/main/__init__.py
 from ..models import CodeSubmission, User # from app/models.py
@@ -23,14 +23,15 @@ from ..utils import ( # from app/utils.py
 @login_required
 def generate_cfg():
     code = request.json.get('code', '')
+    theme = request.json.get('theme', 'light')  # Get theme from request
     
     try:
         # Create CFG generator
         generator = CFGGenerator()
         cfg = generator.generate(code)
         
-        # Generate SVG content
-        svg_content = generator.visualize()
+        # Generate SVG content with theme support
+        svg_content = generator.visualize(format="svg", theme=theme)
         
         # Return SVG directly
         return Response(
@@ -41,17 +42,10 @@ def generate_cfg():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-@main_bp.route('/', methods=['GET', 'POST'])
+@main_bp.route('/', methods=['POST'])
 def home():
-    if request.method == 'GET':
-        if current_user.is_authenticated:
-            return redirect(url_for('main.dashboard'))
-        return render_template(
-            'index.html',
-            comments='',
-            ast='',
-            code_input=''
-        )
+    # GET requests are handled by React Router via catch-all route in __init__.py
+    # This route only handles POST requests for code submission
 
     # Guard POST requests so only authenticated users may submit code
     if not current_user.is_authenticated:
@@ -173,24 +167,27 @@ def home():
 
 
 
-@main_bp.route('/dashboard') #
+# Dashboard route removed - handled by React Router
+# Use /api/dashboard for API data
+
+@main_bp.route('/api/dashboard') #
 @login_required #
-def dashboard(): #
-    current_app.logger.debug(f"Loading dashboard for user: {current_user.username}") #
+def api_dashboard(): #
     submissions = CodeSubmission.query.filter_by( #
         user_id=current_user.id, #
         is_success=True #
     ).order_by(CodeSubmission.timestamp.desc()).all() #
-    current_app.logger.debug(f"Found {len(submissions)} submissions") #
-    return render_template('dashboard.html', #
-                         username=current_user.username, #
-                         submissions=submissions) #
+    return jsonify({ #
+        'username': current_user.username, #
+        'submissions': [{ #
+            'id': s.id, #
+            'submission_name': s.submission_name, #
+            'timestamp': s.timestamp.isoformat() if s.timestamp else None #
+        } for s in submissions] #
+    }) #
 
 
-@main_bp.route('/settings') #
-@login_required #
-def settings(): #
-    return render_template('settings.html') #
+# Settings route removed - handled by React Router
 
 
 @main_bp.route('/delete-account', methods=['POST']) #
@@ -199,20 +196,17 @@ def delete_account(): #
     try:
         password = request.form.get('password') #
         if not current_user.check_password(password): #
-            # flash('Incorrect password.', 'error')
-            return render_template('settings.html', error='Incorrect password') #
+            return jsonify({'success': False, 'error': 'Incorrect password'}), 401
 
         user_to_delete = User.query.get(current_user.id) #
         db.session.delete(user_to_delete) #
         db.session.commit() #
         logout_user() #
-        # flash('Your account has been permanently deleted.', 'success')
-        return redirect(url_for('main.home')) #
+        return jsonify({'success': True, 'redirect': '/'})
     except Exception as e: #
         db.session.rollback() #
         current_app.logger.error(f"Error deleting account: {e}")
-        # flash('Error deleting account.', 'error')
-        return render_template('settings.html', error='Error deleting account') #
+        return jsonify({'success': False, 'error': 'Error deleting account'}), 500
 
 
 @main_bp.route('/get-submission/<int:submission_id>') #
@@ -342,6 +336,4 @@ def process_folder():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@main_bp.route("/model")
-def model_page():
-    return render_template("model.html")
+# Model route removed - handled by React Router

@@ -1,0 +1,76 @@
+.file-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+  position: fixed;
+  top: 50px;
+  left: -280px;
+  transition: left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+  z-index: 60;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+}
+
+.file-sidebar.open {
+  left: 0;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 50px);
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.file-sidebar.open ~ .sidebar-backdrop,
+.sidebar-backdrop.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-header {
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  padding-top: 20px;
+  padding-bottom: 5px;
+  padding-left: 10px;
+}
+
+.file-tree {
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.file-tree ul {
+  list-style-type: none;
+  padding-left: 16px;
+}
+
+.file-tree li {
+  margin: 4px 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.file-tree .file.selected {
+  background-color: rgba(59, 108, 255, 0.15);
+  color: #1f47ff;
+  border-radius: 4px;
+  font-weight: 600;
+}
+

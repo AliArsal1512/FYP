@@ -1275,14 +1275,24 @@ class CFGGenerator:
                     stack.append(dst)
         return False
 
-    def visualize(self, format="svg"):
+    def visualize(self, format="svg", theme="light"):
         """Generate a visual representation of the CFG and return SVG content"""
         dot = Digraph(format=format)
         dot.attr('node', shape='box', style='rounded,filled', fontname='Courier')
         dot.attr('edge', arrowhead='vee')
         
-        # Default color for nodes without method assignment
-        default_color = '#e0f7fa'
+        # Theme-aware colors
+        if theme == "dark":
+            default_color = '#2d2d2d'  # Dark background
+            default_text_color = '#e0e0e0'  # Light text
+            default_edge_color = '#8b8b8b'  # Lighter edges
+            dot.attr('graph', bgcolor='#1e1e1e')  # Dark background for graph
+        else:
+            default_color = '#e0f7fa'  # Light background
+            default_text_color = '#000000'  # Dark text
+            default_edge_color = '#000000'  # Dark edges
+        
+        dot.attr('edge', color=default_edge_color)
         
         for node in self.cfg.nodes():
             label = self.cfg.nodes[node].get("label", node)
@@ -1293,13 +1303,42 @@ class CFGGenerator:
                 method_name = self.node_method_map[node]
                 if method_name in self.method_colors:
                     color = self.method_colors[method_name]
+                    # Adjust color for dark theme
+                    if theme == "dark":
+                        color = self._darken_color(color)
             
-            dot.node(node, label=label, fillcolor=color)
+            dot.node(node, label=label, fillcolor=color, fontcolor=default_text_color)
         
         for src, dst in self.cfg.edges():
-            dot.edge(src, dst)
+            dot.edge(src, dst, color=default_edge_color)
         
         # Render to bytes and return SVG content
         svg_bytes = dot.pipe()
-        return svg_bytes.decode('utf-8')
+        svg_content = svg_bytes.decode('utf-8')
+        
+        # Post-process SVG for dark theme
+        if theme == "dark":
+            svg_content = self._apply_dark_theme_to_svg(svg_content)
+        
+        return svg_content
+    
+    def _darken_color(self, color):
+        """Darken a hex color for dark theme"""
+        if color.startswith('#'):
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+            # Darken by 40%
+            r = max(0, int(r * 0.6))
+            g = max(0, int(g * 0.6))
+            b = max(0, int(b * 0.6))
+            return f"#{r:02x}{g:02x}{b:02x}"
+        return color
+    
+    def _apply_dark_theme_to_svg(self, svg_content):
+        """Apply dark theme styling to SVG content"""
+        import re
+        # Set background color
+        svg_content = re.sub(r'<svg', '<svg style="background-color: #1e1e1e;"', svg_content, count=1)
+        return svg_content
     

@@ -1,0 +1,42 @@
+.ast-container {
+  position: relative;
+}
+
+.ast-node-text {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.comment-indicator {
+  cursor: pointer;
+}
+
+.comment-indicator:hover {
+  fill: #ff6600;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+
+.comment-tooltip {
+  font-family: 'Gill Sans', sans-serif;
+}
+
+.comment-tooltip-header {
+  color: #3b6cff;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 5px;
+}
+
+.comment-tooltip-content {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.comment-tooltip-close {
+  color: #999;
+}
+
+.comment-tooltip-close:hover {
+  color: #ff0000;
+}
+

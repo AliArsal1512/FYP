@@ -1,0 +1,38 @@
+.cfg-container {
+  touch-action: none;
+  cursor: grab;
+}
+
+.cfg-container:active {
+  cursor: grabbing;
+}
+
+#cfgImageWrapper {
+  transition: transform 0.1s ease-out;
+}
+
+#cfgImageWrapper img,
+#cfgImageWrapper svg {
+  pointer-events: none;
+  display: block;
+  max-width: none;
+}
+
+.zoom-btn {
+  background-color: #b65c80;
+  color: white;
+  padding: 10px 15px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.zoom-btn:hover {
+  background-color: #802248;
+}
+

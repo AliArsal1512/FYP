@@ -1,8 +1,8 @@
 # app/__init__.py
 import os
-from flask import Flask
+from flask import Flask, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from .config import Config # We'll create this file next
 
 # Initialize extensions
@@ -42,6 +42,47 @@ def create_app(config_class=Config):
 
     app.register_blueprint(auth_bp, url_prefix='/auth') # All auth routes will be /auth/login, /auth/signup etc.
     app.register_blueprint(main_bp)
+    
+    # Add API route for checking authentication
+    @app.route('/api/check-auth')
+    def check_auth():
+        if current_user.is_authenticated:
+            return jsonify({
+                'authenticated': True,
+                'user': {'username': current_user.username, 'id': current_user.id}
+            })
+        return jsonify({'authenticated': False, 'user': None})
+    
+    # Serve React app for all non-API routes (catch-all route - must be registered last)
+    # This route only handles GET requests - POST requests go to API routes
+    @app.route('/', defaults={'path': ''}, methods=['GET'])
+    @app.route('/<path:path>', methods=['GET'])
+    def serve_react_app(path):
+        # Don't serve React for API routes, auth POST routes, or static files
+        # These are handled by Flask routes above
+        excluded_prefixes = ['api', 'static']
+        
+        # Check if this is an excluded route (should have been handled already)
+        path_parts = path.split('/') if path else []
+        if path_parts and path_parts[0] in excluded_prefixes:
+            from flask import abort
+            abort(404)  # Should have been handled by Flask routes
+        
+        # Serve React build files
+        react_build_dir = os.path.join(base_dir, 'static', 'react-build')
+        if os.path.exists(react_build_dir):
+            # Check if requesting a specific file (like .js, .css, .png, etc.)
+            if path:
+                file_path = os.path.join(react_build_dir, path)
+                if os.path.exists(file_path) and os.path.isfile(file_path):
+                    return send_from_directory(react_build_dir, path)
+            
+            # Serve index.html for React Router (SPA routing)
+            return send_from_directory(react_build_dir, 'index.html')
+        else:
+            # React build doesn't exist
+            from flask import abort
+            abort(404, description="React build not found. Please run 'npm run build' first.")
 
     with app.app_context():
         db.create_all() # Create database tables
