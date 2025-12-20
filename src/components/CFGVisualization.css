@@ -1,6 +1,10 @@
 .cfg-container {
   touch-action: none;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .cfg-container:active {
@@ -16,6 +20,17 @@
   pointer-events: none;
   display: block;
   max-width: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+#cfgImageWrapper svg * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .zoom-btn {

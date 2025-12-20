@@ -8,6 +8,7 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
   const [translateY, setTranslateY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
   const imageRef = useRef(null);
@@ -165,9 +166,24 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
 
     const handleMouseDown = (e) => {
       if (e.button !== 0) return;
+      e.preventDefault(); // Prevent text selection
       setIsDragging(true);
       setStartPos({ x: e.clientX - translateX, y: e.clientY - translateY });
       container.style.cursor = 'grabbing';
+    };
+
+    const handleSelectStart = (e) => {
+      // Prevent text selection in CFG container area
+      if (container && container.contains(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleDragStart = (e) => {
+      // Prevent drag of selected text
+      if (container && container.contains(e.target)) {
+        e.preventDefault();
+      }
     };
 
     const handleMouseMove = (e) => {
@@ -197,12 +213,16 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     container.addEventListener('wheel', handleWheel);
+    document.addEventListener('selectstart', handleSelectStart);
+    document.addEventListener('dragstart', handleDragStart);
 
     return () => {
       container.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       container.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.removeEventListener('dragstart', handleDragStart);
     };
   }, [isDragging, startPos, translateX, translateY]);
 
@@ -227,6 +247,45 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
+  const toggleFullscreen = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!isFullscreen) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement || !!document.webkitFullscreenElement || !!document.msFullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   return (
     <div className="cfg-section col-lg-12 d-flex flex-column position-relative">
@@ -260,6 +319,13 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
             </button>
             <button className="zoom-btn btn btn-sm btn-outline-secondary" onClick={resetZoom}>
               <i className="bi bi-zoom-reset"></i> Reset
+            </button>
+            <button 
+              className="zoom-btn btn btn-sm btn-outline-secondary" 
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              <i className={`bi ${isFullscreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'}`}></i>
             </button>
           </div>
         </div>
