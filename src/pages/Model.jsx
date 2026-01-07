@@ -17,6 +17,7 @@ const Model = () => {
   const [fileStructure, setFileStructure] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const editorRef = useRef(null);
+  const folderUploadRef = useRef(null);
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
@@ -97,6 +98,10 @@ const Model = () => {
     const files = Array.from(event.target.files);
     const structure = {};
     
+    if (files.length === 0) {
+      return;
+    }
+    
     files.forEach(file => {
       if (file.name.endsWith('.java')) {
         const path = file.webkitRelativePath || file.name;
@@ -120,6 +125,11 @@ const Model = () => {
     
     setFileStructure(structure);
     setIsSidebarOpen(true);
+    
+    // Reset the input so the same folder can be selected again
+    if (event.target) {
+      event.target.value = '';
+    }
     
     // Load first Java file
     const firstFile = findFirstJavaFile(structure);
@@ -234,6 +244,15 @@ const Model = () => {
   return (
     <div className="model-section" style={{ paddingTop: '70px' }}>
       <div className="container-fluid" style={{ maxWidth: '1400px', width: '100%' }}>
+        {!isSidebarOpen && (
+          <button
+            className="file-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            title="Open file explorer"
+          >
+            <i className="bi bi-chevron-right"></i>
+          </button>
+        )}
         <FileSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -255,10 +274,11 @@ const Model = () => {
                     onChange={handleFileUpload}
                   />
                   <input
+                    ref={folderUploadRef}
                     type="file"
                     id="folderUpload"
-                    webkitdirectory
-                    directory
+                    webkitdirectory=""
+                    directory=""
                     multiple
                     className="d-none"
                     onChange={handleFolderUpload}

@@ -138,6 +138,34 @@
   display: inline-block;
 }
 
+/* File sidebar toggle button */
+.file-sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 8px;
+  cursor: pointer;
+  z-index: 55;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  color: var(--text-primary);
+}
+
+.file-sidebar-toggle:hover {
+  background-color: var(--bg-tertiary);
+  box-shadow: 2px 0 12px rgba(59, 108, 255, 0.3);
+  transform: translateY(-50%) translateX(2px);
+}
+
+.file-sidebar-toggle i {
+  font-size: 1.2rem;
+}
+
 /* Empty state styling */
 .file-explorer-empty {
   display: flex;
