@@ -279,7 +279,7 @@ const Model = () => {
                   </button>
                 </div>
               </div>
-              <div id="editorContainer" style={{ height: '450px', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
+              <div id="editorContainer" style={{ height: '450px', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
                 <Editor
                   height="450px"
                   defaultLanguage="java"
@@ -309,7 +309,7 @@ const Model = () => {
 
         {/* Output Section */}
         <section className="output-section" id="output-section">
-          <div className="container-fluid code-form" style={{ marginBottom: '40px', borderRadius: '10px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
+          <div className="container-fluid code-form" style={{ marginBottom: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
             <div className="output-container">
               {/* AST Column */}
               <div className="ast-section d-flex flex-column position-relative">

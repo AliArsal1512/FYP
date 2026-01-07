@@ -4,15 +4,21 @@
   background: rgba(255, 255, 255, 0.2) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 
 [data-theme="dark"] #mainNavbar {
   background: rgba(26, 26, 26, 0.8) !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
 #mainNavbar.navbar-shrink {
   padding: 2px 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+[data-theme="dark"] #mainNavbar.navbar-shrink {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 }
 
 .navbar-brand {

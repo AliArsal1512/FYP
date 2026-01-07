@@ -1,6 +1,6 @@
 .login-page,
 .signup-page {
-  height: 100vh;
+  min-height: 100vh;
   background: url('/static/images/body-bg9.png');
   background-size: cover;
   background-position: center;
@@ -10,18 +10,54 @@
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding-top: 80px;
+  padding: 80px 20px 20px 20px;
+  position: relative;
+}
+
+.login-page::before,
+.signup-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 0;
+}
+
+[data-theme="dark"] .login-page::before,
+[data-theme="dark"] .signup-page::before {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.login-page > *,
+.signup-page > * {
+  position: relative;
+  z-index: 1;
 }
 
 .log-sign-card {
   border: 1px solid transparent;
   background: linear-gradient(180deg, rgba(248,249,255,1) 0%, rgba(255,255,255,1) 100%) padding-box,
               linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
+  max-width: 600px !important;
+  width: 100% !important;
 }
 
 [data-theme="dark"] .log-sign-card {
-  background: linear-gradient(180deg, rgba(45,45,45,1) 0%, rgba(26,26,26,1) 100%) padding-box,
+  background: #3a3a3a padding-box,
               linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
+}
+
+[data-theme="dark"] .log-sign-card .card-body {
+  background-color: #3a3a3a !important;
+}
+
+[data-theme="dark"] .log-sign-card .form-control {
+  background-color: #1a1a1a !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
 }
 
 .login-label {

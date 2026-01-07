@@ -83,6 +83,44 @@ body {
   color: var(--text-primary) !important;
 }
 
+/* Global container styles with glowing shadows - only main containers */
+.container,
+.container-fluid,
+.code-form,
+.cfg-section {
+  border-radius: 12px;
+  transition: box-shadow 0.6s ease, border-color 0.6s ease;
+  position: relative;
+}
+
+/* Glow effect only on main containers */
+.container:hover,
+.container-fluid:hover,
+.code-form:hover,
+.code-form:active,
+.cfg-section:hover,
+.cfg-section:active {
+  box-shadow: 0 0 20px rgba(59, 108, 255, 0.2), 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+
+[data-theme="dark"] .container:hover,
+[data-theme="dark"] .container-fluid:hover,
+[data-theme="dark"] .code-form:hover,
+[data-theme="dark"] .code-form:active,
+[data-theme="dark"] .cfg-section:hover,
+[data-theme="dark"] .cfg-section:active {
+  box-shadow: 0 0 25px rgba(59, 108, 255, 0.3), 0 4px 20px rgba(0,0,0,0.3) !important;
+}
+
+/* Exclude how-it-works container from glow */
+#how-it-works .container:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+}
+
+[data-theme="dark"] #how-it-works .container:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+}
+
 /* Common button styles */
 .clarifai-btn {
   background-color: #3b6cff;

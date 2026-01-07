@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './FileSidebar.css';
 
 const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const findFirstJavaFile = (structure) => {
     for (const key in structure) {
       if (key === '_type') continue;
@@ -22,7 +24,7 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
       const item = structure[key];
       if (item._type === 'folder') {
         items.push(
-          <li key={key} style={{ paddingLeft: level > 0 ? '16px' : '0' }}>
+          <li key={key} style={{ paddingLeft: level > 0 ? '20px' : '0' }}>
             <div className="folder">
               <span className="folder-name">📁 {key}</span>
             </div>
@@ -30,12 +32,17 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
           </li>
         );
       } else if (item._type === 'file' && key.endsWith('.java')) {
+        const fileKey = item.path || key;
+        const isSelected = selectedFile === fileKey;
         items.push(
           <li
             key={key}
-            style={{ paddingLeft: level > 0 ? '16px' : '0' }}
-            onClick={() => onFileSelect(item.file)}
-            className="file-item"
+            style={{ paddingLeft: level > 0 ? '20px' : '0' }}
+            onClick={() => {
+              setSelectedFile(fileKey);
+              onFileSelect(item.file);
+            }}
+            className={`file-item ${isSelected ? 'selected' : ''}`}
           >
             <div className="file java">☕ {key}</div>
           </li>
@@ -55,21 +62,21 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
             <i className="bi bi-x-lg"></i>
           </button>
         </div>
-        <div className="sidebar-content p-2">
-          <div className="d-flex justify-content-between align-items-center mb-2">
+        <div className="sidebar-content">
+          <div className="d-flex justify-content-between align-items-center mb-2 px-2 pt-2">
             <h6 className="mb-0">FILES</h6>
           </div>
           <div className="file-tree">
             {Object.keys(fileStructure).length > 0 ? (
               <ul>{buildFileTree(fileStructure)}</ul>
             ) : (
-              <div className="p-2">
-                <p className="text-muted mb-2">No files uploaded</p>
+              <div className="file-explorer-empty">
+                <div className="empty-state-icon">📁</div>
+                <p className="empty-state-text">No files uploaded</p>
                 {/* Reuse the hidden folder upload input from Model page via its id */}
                 <label
                   htmlFor="folderUpload"
-                  className="btn btn-sm clarifai-btn"
-                  style={{ fontSize: '0.85rem', padding: '4px 10px' }}
+                  className="btn clarifai-btn empty-state-button"
                 >
                   📂 Upload Folder
                 </label>

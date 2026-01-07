@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '../contexts/ThemeContext';
 import './Dashboard.css';
@@ -10,6 +10,8 @@ const Dashboard = () => {
   const [viewType, setViewType] = useState('code');
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const codePreviewRef = useRef(null);
 
   useEffect(() => {
     fetchSubmissions();
@@ -40,6 +42,12 @@ const Dashboard = () => {
         const data = await response.json();
         setSelectedSubmission(data);
         setViewType('code');
+        // Scroll to code preview after a short delay to allow state update
+        setTimeout(() => {
+          if (codePreviewRef.current) {
+            codePreviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
       }
     } catch (error) {
       console.error('Failed to load submission:', error);
@@ -89,7 +97,7 @@ const Dashboard = () => {
 
   return (
     <div className="container-fluid dashboard-section" style={{ maxWidth: '1400px', width: '100%' }}>
-      <section className="dashboard-section">
+      <section>
         <div className="welcome-text align-self-start mb-4">
           <h2>Welcome, <span className="text-gradient">{username}</span></h2>
           <div className="align-self-start mb-4">
@@ -97,32 +105,52 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="row g-4">
-          <div className="col-md-4">
-            <div className="card h-100">
-              <div className="card-header-blue bg-primary text-white">
-                <h5 className="mb-0">Code History</h5>
-              </div>
-              <div className="card-body" style={{ overflowY: 'auto', maxHeight: '500px' }}>
-                {submissions.length === 0 ? (
-                  <p className="text-muted">No submissions yet</p>
-                ) : (
-                  submissions.map(sub => (
-                    <SubmissionItem
-                      key={sub.id}
-                      submission={sub}
-                      onSelect={() => loadSubmission(sub.id)}
-                      onDelete={() => deleteSubmission(sub.id)}
-                      onRename={(newName) => renameSubmission(sub.id, newName)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+        {isSidebarOpen && <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>}
+        {/* Toggle button when sidebar is closed */}
+        {!isSidebarOpen && (
+          <button
+            className="dashboard-sidebar-toggle"
+            onClick={() => setIsSidebarOpen(true)}
+            title="Open sidebar"
+          >
+            <i className="bi bi-chevron-right"></i>
+          </button>
+        )}
+        {/* Sidebar for submissions */}
+        <div className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-header d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Code History</h5>
+            <button 
+              className="btn btn-sm btn-outline-secondary" 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              title={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+              <i className={`bi bi-chevron-${isSidebarOpen ? 'left' : 'right'}`}></i>
+            </button>
           </div>
+          <div className="sidebar-content">
+            {submissions.length === 0 ? (
+              <p className="text-muted px-3 py-4">No submissions yet</p>
+            ) : (
+              <div className="submission-list">
+                {submissions.map(sub => (
+                  <SubmissionItem
+                    key={sub.id}
+                    submission={sub}
+                    isSelected={selectedSubmission?.id === sub.id}
+                    onSelect={() => loadSubmission(sub.id)}
+                    onDelete={() => deleteSubmission(sub.id)}
+                    onRename={(newName) => renameSubmission(sub.id, newName)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-          <div className="col-md-8">
-            <div className="card h-100">
+        {/* Main content area */}
+        <div className="dashboard-main">
+            <div ref={codePreviewRef} className="card h-100">
               <div className="card-header-blue bg-primary text-white">
                 <h5 className="mb-0 d-inline">Code Preview</h5>
                 <div className="btn-group float-end" role="group">
@@ -201,28 +229,21 @@ const Dashboard = () => {
                     )}
                   </>
                 ) : (
-                  <div
-                    style={{
-                      height: '500px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
-                    }}
-                  >
-                    <p>Select a submission to preview</p>
+                  <div className="code-preview-empty">
+                    <div className="empty-state-icon">💻</div>
+                    <p className="empty-state-text">Select a submission to preview</p>
+                    <p className="empty-state-subtext">Choose a file from the sidebar to view its code, AST, or comments</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
-        </div>
       </section>
     </div>
   );
 };
 
-const SubmissionItem = ({ submission, onSelect, onDelete, onRename }) => {
+const SubmissionItem = ({ submission, isSelected, onSelect, onDelete, onRename }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(submission.submission_name);
 
@@ -234,8 +255,8 @@ const SubmissionItem = ({ submission, onSelect, onDelete, onRename }) => {
   };
 
   return (
-    <div className="submission-item mb-3 card p-2">
-      <div className="d-flex justify-content-between align-items-center">
+    <div className={`submission-item ${isSelected ? 'selected' : ''}`} onClick={onSelect}>
+      <div className="submission-item-content">
         {isEditing ? (
           <input
             type="text"
@@ -244,23 +265,21 @@ const SubmissionItem = ({ submission, onSelect, onDelete, onRename }) => {
             onChange={(e) => setName(e.target.value)}
             onBlur={handleSave}
             onKeyPress={(e) => e.key === 'Enter' && handleSave()}
+            onClick={(e) => e.stopPropagation()}
             autoFocus
           />
         ) : (
-          <div className="submission-name-display" style={{ color: 'var(--text-primary)' }}>
+          <div className="submission-name-display">
             {submission.submission_name}
           </div>
         )}
-        <div className="btn-group">
+        <div className="submission-actions" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn btn-sm btn-outline-secondary"
             onClick={() => setIsEditing(!isEditing)}
             title="Rename"
           >
             <i className="bi bi-pencil"></i>
-          </button>
-          <button className="btn btn-sm btn-outline-primary" onClick={onSelect}>
-            Preview
           </button>
           <button
             className="btn btn-sm btn-outline-danger"

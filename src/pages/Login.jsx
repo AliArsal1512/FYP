@@ -38,7 +38,7 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="login-page">
-      <div className="log-sign-card card" style={{ maxWidth: '400px', width: '100%' }}>
+      <div className="log-sign-card card">
         <div className="card-body p-4">
           <h2 className="login-label text-center mb-4">Login</h2>
           {error && <div className="alert alert-danger">{error}</div>}
