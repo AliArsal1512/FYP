@@ -63,7 +63,17 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
             {Object.keys(fileStructure).length > 0 ? (
               <ul>{buildFileTree(fileStructure)}</ul>
             ) : (
-              <p className="text-muted p-2">No files uploaded</p>
+              <div className="p-2">
+                <p className="text-muted mb-2">No files uploaded</p>
+                {/* Reuse the hidden folder upload input from Model page via its id */}
+                <label
+                  htmlFor="folderUpload"
+                  className="btn btn-sm clarifai-btn"
+                  style={{ fontSize: '0.85rem', padding: '4px 10px' }}
+                >
+                  📂 Upload Folder
+                </label>
+              </div>
             )}
           </div>
         </div>
