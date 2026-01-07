@@ -12,6 +12,13 @@ const ASTVisualization = ({ astData, theme }) => {
   const isInitialRenderRef = useRef(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [updateTrigger, setUpdateTrigger] = useState(0);
+  const [isCompressedView, setIsCompressedView] = useState(true); // Start with compressed view (only classes)
+  const expandedClassesRef = useRef(new Set()); // Track manually expanded classes
+  const astDataStateRef = useRef(null); // Store the current AST state with expand/collapse info
+  const previousAstDataRef = useRef(null); // Track previous astData to detect changes
+  
+  // Font size constant - used for both node text and comment tooltips
+  const fontSize = 24;
 
   useEffect(() => {
     if (!astData || !containerRef.current) {
@@ -21,10 +28,20 @@ const ASTVisualization = ({ astData, theme }) => {
       }
       // Reset initial render flag when data is cleared (new submission)
       isInitialRenderRef.current = true;
+      expandedClassesRef.current.clear(); // Clear expanded classes when data is cleared
+      astDataStateRef.current = null; // Clear AST state
       return;
     }
 
     const container = containerRef.current;
+    
+    // Initialize AST state if it doesn't exist or if astData prop changed (new submission)
+    if (previousAstDataRef.current !== astData) {
+      astDataStateRef.current = JSON.parse(JSON.stringify(astData));
+      previousAstDataRef.current = astData;
+      // Reset expanded classes when new data comes in
+      expandedClassesRef.current.clear();
+    }
     
     // Save current transform before clearing (for expand/collapse position preservation)
     if (svgRef.current) {
@@ -58,7 +75,6 @@ const ASTVisualization = ({ astData, theme }) => {
       return ctx.measureText(text).width;
     }
 
-    const fontSize = 24;
     const horizontalPadding = 14;
     const nodeRectHeight = 44;
     const nodeVerticalSpacing = 90;
@@ -89,7 +105,51 @@ const ASTVisualization = ({ astData, theme }) => {
         return base * extra;
       });
 
-    const root = d3.hierarchy(astData);
+    // Helper function to recursively collapse/expand nodes based on view mode
+    const processNodeForView = (nodeData, compressMode) => {
+      if (!nodeData) return;
+      
+      if (compressMode) {
+        // Compressed view: collapse all except manually expanded classes
+        if (nodeData.type === 'class') {
+          const className = nodeData.name;
+          // If this class is manually expanded, keep it expanded
+          if (expandedClassesRef.current.has(className)) {
+            // Expand this class
+            if (nodeData._children && nodeData._children.length > 0) {
+              nodeData.children = nodeData._children;
+              nodeData._children = null;
+            }
+          } else {
+            // Collapse this class (show only class name)
+            if (nodeData.children && nodeData.children.length > 0) {
+              if (!nodeData._children) {
+                nodeData._children = nodeData.children;
+              }
+              nodeData.children = null;
+            }
+          }
+        }
+        // Non-class nodes: don't need special handling - they'll be hidden automatically
+        // if their parent class is collapsed, or visible if parent is expanded
+      } else {
+        // Full view: expand everything
+        if (nodeData._children && nodeData._children.length > 0) {
+          nodeData.children = nodeData._children;
+          nodeData._children = null;
+        }
+      }
+      
+      // Process children recursively (if they exist)
+      const childrenToProcess = nodeData.children || nodeData._children || [];
+      childrenToProcess.forEach(child => processNodeForView(child, compressMode));
+    };
+
+    // Process the AST state based on view mode (work with the stored state)
+    const processedAstData = JSON.parse(JSON.stringify(astDataStateRef.current));
+    processNodeForView(processedAstData, isCompressedView);
+
+    const root = d3.hierarchy(processedAstData);
     
     // Store old positions before layout (for smooth transitions on update)
     root.eachBefore(d => {
@@ -109,6 +169,12 @@ const ASTVisualization = ({ astData, theme }) => {
       .x(d => d.y)
       .y(d => d.x);
 
+    // Helper function to get a unique identifier for a node
+    const getNodeId = (nodeData) => {
+      if (!nodeData) return null;
+      return `${nodeData.type || 'unknown'}:${nodeData.name || 'unnamed'}`;
+    };
+
     // Helper function to check if a node should be animated
     // - On initial render (no animatingNodeRef): animate everything
     // - On expand/collapse (animatingNodeRef is set): only animate the clicked node and its descendants
@@ -116,10 +182,12 @@ const ASTVisualization = ({ astData, theme }) => {
     const shouldAnimateNode = (hierarchyNode) => {
       // Individual node expand/collapse: only animate affected subtree (takes precedence)
       if (animatingNodeRef.current) {
+        const animatingNodeId = getNodeId(animatingNodeRef.current);
         // Traverse up the parent chain to see if this node is a descendant of the clicked node
         let current = hierarchyNode;
         while (current) {
-          if (current.data === animatingNodeRef.current) {
+          const currentNodeId = getNodeId(current.data);
+          if (currentNodeId === animatingNodeId) {
             return true;
           }
           current = current.parent;
@@ -268,6 +336,26 @@ const ASTVisualization = ({ astData, theme }) => {
       }, 750);
     }
     
+    // Helper function to find and update node in AST state
+    const updateNodeInState = (stateData, targetNodeData, updateFn) => {
+      if (!stateData) return false;
+      
+      // Check if this is the target node (compare by type and name)
+      if (getNodeId(stateData) === getNodeId(targetNodeData)) {
+        updateFn(stateData);
+        return true;
+      }
+      
+      // Recursively search children
+      const children = stateData.children || stateData._children || [];
+      for (const child of children) {
+        if (updateNodeInState(child, targetNodeData, updateFn)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     // Add click handler to nodes
     nodeG.on('click', (event, d) => {
         // Save current transform to preserve viewport position before changing tree structure
@@ -280,13 +368,30 @@ const ASTVisualization = ({ astData, theme }) => {
         // Save the clicked node to animate only it and its children
         animatingNodeRef.current = d.data;
         
-        if (d.data.children) {
-          d.data._children = d.data.children;
-          d.data.children = null;
-        } else if (d.data._children) {
-          d.data.children = d.data._children;
-          d.data._children = null;
-        }
+        // Update the node in the stored AST state
+        updateNodeInState(astDataStateRef.current, d.data, (nodeState) => {
+          // Toggle expand/collapse
+          if (nodeState.children) {
+            nodeState._children = nodeState.children;
+            nodeState.children = null;
+          } else if (nodeState._children) {
+            nodeState.children = nodeState._children;
+            nodeState._children = null;
+          }
+          
+          // Track class expansions/collapses for compressed view mode
+          if (nodeState.type === 'class' && isCompressedView) {
+            const className = nodeState.name;
+            if (nodeState.children) {
+              // Expanding - add to expanded set
+              expandedClassesRef.current.add(className);
+            } else if (nodeState._children) {
+              // Collapsing - remove from expanded set
+              expandedClassesRef.current.delete(className);
+            }
+          }
+        });
+        
         // Re-render
         const event2 = new Event('ast-update');
         container.dispatchEvent(event2);
@@ -348,7 +453,7 @@ const ASTVisualization = ({ astData, theme }) => {
         // Update existing tooltips to new scale
         d3.selectAll('.comment-tooltip').each(function() {
           const tooltip = d3.select(this);
-          const baseFontSize = 14;
+          const baseFontSize = fontSize; // Use same font size as node text (24px)
           const basePadding = 8;
           const baseMaxWidth = 300;
           const scale = event.transform.k;
@@ -356,7 +461,7 @@ const ASTVisualization = ({ astData, theme }) => {
           tooltip.style('padding', `${basePadding * scale}px`);
           tooltip.style('max-width', `${baseMaxWidth * scale}px`);
           tooltip.style('border-radius', `${4 * scale}px`);
-          tooltip.style('line-height', `${1.4 * scale}`);
+          tooltip.style('line-height', `${1.4 * baseFontSize * scale}px`);
           // Update close button
           tooltip.select('button')
             .style('font-size', `${16 * scale}px`)
@@ -370,7 +475,7 @@ const ASTVisualization = ({ astData, theme }) => {
           // Update content div - ensure it scales
           tooltip.select('.comment-tooltip-content')
             .style('font-size', `${baseFontSize * scale}px`)
-            .style('line-height', `${1.4 * scale}`);
+            .style('line-height', `${1.4 * baseFontSize * scale}px`);
         });
       });
 
@@ -418,7 +523,37 @@ const ASTVisualization = ({ astData, theme }) => {
     return () => {
       container.removeEventListener('ast-update', handleUpdate);
     };
-  }, [astData, theme, isFullscreen, updateTrigger]);
+  }, [astData, theme, isFullscreen, updateTrigger, isCompressedView]);
+
+  // Extract all class names from AST
+  const extractClassNames = (data, classNames = []) => {
+    if (!data) return classNames;
+    if (data.type === 'class' && data.name) {
+      classNames.push(data.name);
+    }
+    const children = data.children || data._children || [];
+    children.forEach(child => extractClassNames(child, classNames));
+    return classNames;
+  };
+
+  const classNames = astData ? extractClassNames(astData) : [];
+
+  // Toggle between compressed and full view
+  const toggleView = () => {
+    setIsCompressedView(prev => !prev);
+    if (!isCompressedView) {
+      // When switching to compressed view, clear expanded classes
+      expandedClassesRef.current.clear();
+    }
+    setUpdateTrigger(prev => prev + 1);
+  };
+
+  // Expand a specific class by name
+  const expandClass = (className) => {
+    if (!astData) return;
+    expandedClassesRef.current.add(className);
+    setUpdateTrigger(prev => prev + 1);
+  };
 
   const showCommentTooltip = (comment, x, y) => {
     // Remove any existing tooltips
@@ -430,7 +565,8 @@ const ASTVisualization = ({ astData, theme }) => {
     
     // Get current zoom scale
     const scale = zoomScaleRef.current || 1;
-    const baseFontSize = 14;
+    // Use the same base font size as node text (24px)
+    const baseFontSize = fontSize; // fontSize is 24, same as node text
     const basePadding = 8;
     const baseMaxWidth = 300;
     const baseBorderRadius = 4;
@@ -449,10 +585,12 @@ const ASTVisualization = ({ astData, theme }) => {
       .style('box-shadow', `0 ${2 * scale}px ${4 * scale}px rgba(0,0,0,0.2)`)
       .style('max-width', `${baseMaxWidth * scale}px`)
       .style('font-size', `${baseFontSize * scale}px`)
-      .style('line-height', `${1.4 * scale}`)
+      .style('line-height', `${1.4 * baseFontSize * scale}px`)
       .style('z-index', '10000')
       .style('color', theme === 'dark' ? 'var(--text-primary)' : '#000')
-      .style('pointer-events', 'auto');
+      .style('pointer-events', 'auto')
+      .style('font-family', "'Lexend', sans-serif")
+      .style('font-weight', 'normal');
     
     tooltip.append('div')
       .attr('class', 'comment-tooltip-header')
@@ -460,12 +598,15 @@ const ASTVisualization = ({ astData, theme }) => {
       .style('margin-bottom', `${5 * scale}px`)
       .style('padding-bottom', `${5 * scale}px`)
       .style('font-size', `${baseFontSize * scale}px`)
+      .style('font-family', "'Lexend', sans-serif")
       .text('Comment');
     
     tooltip.append('div')
       .attr('class', 'comment-tooltip-content')
       .style('font-size', `${baseFontSize * scale}px`)
-      .style('line-height', `${1.4 * scale}`)
+      .style('line-height', `${1.4 * baseFontSize * scale}px`)
+      .style('font-family', "'Lexend', sans-serif")
+      .style('font-weight', 'normal')
       .text(comment);
     
     tooltip.append('button')
@@ -597,6 +738,76 @@ const ASTVisualization = ({ astData, theme }) => {
         backgroundColor: theme === 'dark' ? 'var(--ast-bg)' : '#ffffff',
       }}
     >
+      {/* Controls Bar */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          right: '50px',
+          zIndex: 10001,
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Toggle View Button */}
+        <button
+          onClick={toggleView}
+          className="btn btn-sm btn-outline-secondary"
+          style={{
+            backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+            border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+            color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+            pointerEvents: 'auto',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+          }}
+          title={isCompressedView ? 'Show Full Tree' : 'Show Compressed Tree'}
+        >
+          {isCompressedView ? (
+            <>
+              <i className="bi bi-arrows-expand me-1"></i> Show Full Tree
+            </>
+          ) : (
+            <>
+              <i className="bi bi-arrows-collapse me-1"></i> Show Compressed Tree
+            </>
+          )}
+        </button>
+
+        {/* Class Dropdown */}
+        {classNames.length > 0 && (
+          <div style={{ position: 'relative' }}>
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  expandClass(e.target.value);
+                  e.target.value = ''; // Reset dropdown
+                }
+              }}
+              className="form-select form-select-sm"
+              style={{
+                backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+                color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                pointerEvents: 'auto',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                minWidth: '150px',
+              }}
+            >
+              <option value="">Select Class to Expand</option>
+              {classNames.map((className) => (
+                <option key={className} value={className}>
+                  {className}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       <div
         id="astTreeContainer"
         ref={containerRef}
