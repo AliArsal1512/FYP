@@ -161,6 +161,76 @@ const Model = () => {
     reader.readAsText(file);
   };
 
+  const copyToClipboard = async (text, type) => {
+    try {
+      // Extract plain text from HTML if needed
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = text;
+      const plainText = tempDiv.textContent || tempDiv.innerText || text;
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(plainText);
+          showCopyFeedback(type, true);
+          return;
+        } catch (clipboardError) {
+          console.warn('Clipboard API failed, trying fallback:', clipboardError);
+          // Fall through to fallback method
+        }
+      }
+      
+      // Fallback method: create a temporary textarea element
+      const textarea = document.createElement('textarea');
+      textarea.value = plainText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '-999999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+          showCopyFeedback(type, true);
+        } else {
+          throw new Error('execCommand copy failed');
+        }
+      } catch (fallbackError) {
+        document.body.removeChild(textarea);
+        throw fallbackError;
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showCopyFeedback(type, false);
+    }
+  };
+
+  const showCopyFeedback = (type, success) => {
+    const button = document.querySelector(`[data-copy-type="${type}"]`);
+    if (button) {
+      const originalText = button.innerHTML;
+      if (success) {
+        button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        button.style.color = '#28a745';
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.style.color = '';
+        }, 2000);
+      } else {
+        button.innerHTML = '<i class="bi bi-x"></i> Failed';
+        button.style.color = '#dc3545';
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.style.color = '';
+        }, 2000);
+      }
+    }
+  };
+
   return (
     <div className="model-section" style={{ paddingTop: '70px' }}>
       <div className="container-fluid" style={{ maxWidth: '1400px', width: '100%' }}>
@@ -246,6 +316,21 @@ const Model = () => {
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                   <label className="form-label mb-0">Generated AST</label>
                   <div className="d-flex gap-2 flex-wrap align-items-center">
+                    {!isGraphicalView && astOutput && (
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => copyToClipboard(astOutput, 'ast')}
+                        data-copy-type="ast"
+                        style={{
+                          backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                          border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+                          color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                        }}
+                        title="Copy AST to clipboard"
+                      >
+                        <i className="bi bi-clipboard"></i> Copy
+                      </button>
+                    )}
                     <button
                       className="btn btn-sm clarifai-btn"
                       onClick={() => setIsGraphicalView(!isGraphicalView)}
@@ -280,6 +365,21 @@ const Model = () => {
               <div className="comments-section d-flex flex-column position-relative">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                   <label className="form-label mb-0">Generated Comments</label>
+                  {commentsOutput && (
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => copyToClipboard(commentsOutput, 'comments')}
+                      data-copy-type="comments"
+                      style={{
+                        backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                        border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+                        color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                      }}
+                      title="Copy comments to clipboard"
+                    >
+                      <i className="bi bi-clipboard"></i> Copy
+                    </button>
+                  )}
                 </div>
                 {isLoading.comments && (
                   <div className="loading-overlay">
