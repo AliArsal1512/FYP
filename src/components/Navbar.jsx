@@ -83,7 +83,7 @@ const Navbar = ({ isAuthenticated, user, onLogout }) => {
             )}
             <li className="nav-item">
               <button className="theme-toggle" onClick={toggleTheme}>
-                {theme === 'light' ? '🌙' : '☀️'}
+                <span className="theme-toggle-icon">{theme === 'light' ? '🌙' : '☀️'}</span>
               </button>
             </li>
           </ul>

@@ -57,14 +57,17 @@ def home():
 
     if request.method == 'POST':
         try:
-            code_input = request.json.get('code', '') #
+            code_input = request.json.get('code', '')
+            submission_name_provided = request.json.get('submission_name', '') or ''
+            submission_name_provided = submission_name_provided.strip() if submission_name_provided else ''
+            
             if not code_input.strip() or code_input == '{{ code_input }}': #
                 return jsonify({ #
                     'comments': '<div class="comment-error">Error: No Code Submitted</div>',
                     'ast': '<div class="ast-error">Error: No Code Submitted</div>'
                 })
 
-            code_hash = compute_hash(code_input) #
+            code_hash = compute_hash(code_input)
 
             existing_submission = CodeSubmission.query.filter_by( #
                 user_id=current_user.id, #
@@ -181,14 +184,29 @@ def home():
                     comments_output_list.extend(class_data['method_comments']) #
                 comments_output = '\n'.join(comments_output_list) if comments_output_list else "No comments generated" #
 
-                new_submission = CodeSubmission( #
-                    user_id=current_user.id, #
-                    code_content=code_input, #
-                    submission_name=f"Submission-{uuid.uuid4().hex[:6]}", #
-                    ast_content=ast_output, #
-                    comments_content=comments_output, #
-                    code_hash=code_hash, #
-                    is_success=True #
+                # Generate default name if not provided
+                if submission_name_provided and submission_name_provided != '':
+                    final_submission_name = submission_name_provided
+                else:
+                    # Try to extract class name from code
+                    import re
+                    class_match = re.search(r'class\s+(\w+)', code_input)
+                    if class_match:
+                        final_submission_name = class_match.group(1)
+                    else:
+                        # Fallback to timestamp-based name
+                        from datetime import datetime
+                        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                        final_submission_name = f"Submission-{timestamp}"
+                
+                new_submission = CodeSubmission(
+                    user_id=current_user.id,
+                    code_content=code_input,
+                    submission_name=final_submission_name,
+                    ast_content=ast_output,
+                    comments_content=comments_output,
+                    code_hash=code_hash,
+                    is_success=True
                 )
                 db.session.add(new_submission) #
                 db.session.commit() #
@@ -199,16 +217,39 @@ def home():
                 'cfg_supported': True, # Indicate CFG generation is supported
             })
 
-        except Exception as e: #
+        except Exception as e:
             current_app.logger.error(f"Server error in home POST: {str(e)}")
-            # Attempt to get code_input if it was defined before the error
+            # Attempt to get code_input and submission_name from request
             code_input_for_error = request.json.get('code', '') if request.is_json else "Unavailable"
-
-            error_submission = CodeSubmission( #
-                user_id=current_user.id, #
-                code_content=code_input_for_error, #
-                submission_name=f"Failed-{uuid.uuid4().hex[:6]}", #
-                is_success=False #
+            error_submission_name = ''
+            if request.is_json:
+                error_submission_name = request.json.get('submission_name', '') or ''
+                error_submission_name = error_submission_name.strip() if error_submission_name else ''
+            
+            # Generate error name
+            if error_submission_name and error_submission_name != '':
+                error_name = f"Failed-{error_submission_name}"
+            else:
+                # Try to extract class name from code
+                import re
+                if code_input_for_error and code_input_for_error != "Unavailable":
+                    class_match = re.search(r'class\s+(\w+)', code_input_for_error)
+                    if class_match:
+                        error_name = f"Failed-{class_match.group(1)}"
+                    else:
+                        from datetime import datetime
+                        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                        error_name = f"Failed-{timestamp}"
+                else:
+                    from datetime import datetime
+                    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                    error_name = f"Failed-{timestamp}"
+            
+            error_submission = CodeSubmission(
+                user_id=current_user.id,
+                code_content=code_input_for_error,
+                submission_name=error_name,
+                is_success=False
             )
             db.session.add(error_submission) #
             db.session.commit() #
@@ -224,21 +265,51 @@ def home():
 # Dashboard route removed - handled by React Router
 # Use /api/dashboard for API data
 
-@main_bp.route('/api/dashboard') #
-@login_required #
-def api_dashboard(): #
-    submissions = CodeSubmission.query.filter_by( #
-        user_id=current_user.id, #
-        is_success=True #
-    ).order_by(CodeSubmission.timestamp.desc()).all() #
-    return jsonify({ #
-        'username': current_user.username, #
-        'submissions': [{ #
-            'id': s.id, #
-            'submission_name': s.submission_name, #
-            'timestamp': s.timestamp.isoformat() if s.timestamp else None #
-        } for s in submissions] #
-    }) #
+@main_bp.route('/api/dashboard')
+@login_required
+def api_dashboard():
+    submissions = CodeSubmission.query.filter_by(
+        user_id=current_user.id,
+        is_success=True
+    ).order_by(CodeSubmission.timestamp.desc()).all()
+    
+    # Calculate user stats
+    total_submissions = len(submissions)
+    
+    # Account creation date - use first submission timestamp as estimate
+    # (If User model had created_at, we'd use that instead)
+    account_creation = None
+    if submissions:
+        first_submission = CodeSubmission.query.filter_by(
+            user_id=current_user.id,
+            is_success=True
+        ).order_by(CodeSubmission.timestamp.asc()).first()
+        if first_submission and first_submission.timestamp:
+            account_creation = first_submission.timestamp.isoformat()
+    
+    # Account level based on submissions (can be refined later)
+    if total_submissions < 5:
+        account_level = "Beginner"
+    elif total_submissions < 15:
+        account_level = "Intermediate"
+    elif total_submissions < 30:
+        account_level = "Advanced"
+    else:
+        account_level = "Expert"
+    
+    return jsonify({
+        'username': current_user.username,
+        'stats': {
+            'total_submissions': total_submissions,
+            'account_creation': account_creation,
+            'account_level': account_level
+        },
+        'submissions': [{
+            'id': s.id,
+            'submission_name': s.submission_name,
+            'timestamp': s.timestamp.isoformat() if s.timestamp else None
+        } for s in submissions]
+    })
 
 
 # Settings route removed - handled by React Router

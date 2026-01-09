@@ -195,19 +195,5 @@ body {
           drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
 }
 
-/* Theme toggle button */
-.theme-toggle {
-  background: transparent;
-  border: 2px solid var(--text-primary);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-left: 10px;
-}
-
-.theme-toggle:hover {
-  background-color: var(--bg-secondary);
-}
+/* Theme toggle button styles are defined in Navbar.css */
 

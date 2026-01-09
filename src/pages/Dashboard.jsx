@@ -6,11 +6,14 @@ import './Dashboard.css';
 const Dashboard = () => {
   const { theme } = useTheme();
   const [submissions, setSubmissions] = useState([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [viewType, setViewType] = useState('code');
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState('');
+  const [stats, setStats] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const codePreviewRef = useRef(null);
 
   useEffect(() => {
@@ -25,12 +28,25 @@ const Dashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setSubmissions(data.submissions || []);
+        setFilteredSubmissions(data.submissions || []);
         setUsername(data.username || '');
+        setStats(data.stats || null);
       }
     } catch (error) {
       console.error('Failed to fetch submissions:', error);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredSubmissions(submissions);
+    } else {
+      const filtered = submissions.filter(sub =>
+        sub.submission_name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredSubmissions(filtered);
+    }
+  }, [searchQuery, submissions]);
 
   const loadSubmission = async (submissionId) => {
     setIsLoading(true);
@@ -40,7 +56,7 @@ const Dashboard = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setSelectedSubmission(data);
+        setSelectedSubmission({ ...data, id: submissionId });
         setViewType('code');
         // Scroll to code preview after a short delay to allow state update
         setTimeout(() => {
@@ -67,9 +83,19 @@ const Dashboard = () => {
         credentials: 'include',
       });
       if (response.ok) {
-        setSubmissions(submissions.filter(s => s.id !== submissionId));
+        const updatedSubmissions = submissions.filter(s => s.id !== submissionId);
+        setSubmissions(updatedSubmissions);
+        const updatedFiltered = filteredSubmissions.filter(s => s.id !== submissionId);
+        setFilteredSubmissions(updatedFiltered);
         if (selectedSubmission && selectedSubmission.id === submissionId) {
           setSelectedSubmission(null);
+        }
+        // Update stats
+        if (stats) {
+          setStats({
+            ...stats,
+            total_submissions: updatedSubmissions.length
+          });
         }
       }
     } catch (error) {
@@ -175,6 +201,43 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Stats Cards */}
+        {stats && (
+          <div className="stats-cards-container mb-4">
+            <div className="stats-card">
+              <div className="stats-card-icon">
+                <i className="bi bi-code-square"></i>
+              </div>
+              <div className="stats-card-content">
+                <div className="stats-card-value">{stats.total_submissions}</div>
+                <div className="stats-card-label">Code Submissions</div>
+              </div>
+            </div>
+            <div className="stats-card">
+              <div className="stats-card-icon">
+                <i className="bi bi-calendar-check"></i>
+              </div>
+              <div className="stats-card-content">
+                <div className="stats-card-value stats-card-date">
+                  {stats.account_creation 
+                    ? new Date(stats.account_creation).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'N/A'}
+                </div>
+                <div className="stats-card-label">Account Created</div>
+              </div>
+            </div>
+            <div className="stats-card">
+              <div className="stats-card-icon">
+                <i className="bi bi-trophy"></i>
+              </div>
+              <div className="stats-card-content">
+                <div className="stats-card-value stats-card-level">{stats.account_level}</div>
+                <div className="stats-card-label">Account Level</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div 
           className={`sidebar-backdrop ${isSidebarOpen ? 'show' : ''}`} 
           onClick={() => setIsSidebarOpen(false)}
@@ -202,23 +265,50 @@ const Dashboard = () => {
             </button>
               </div>
           <div className="sidebar-content">
-                {submissions.length === 0 ? (
+            {/* Search Bar */}
+            {submissions.length > 0 && (
+              <div className="sidebar-search-container px-3 pt-2 pb-2">
+                <div className="sidebar-search-wrapper">
+                  <i className="bi bi-search sidebar-search-icon"></i>
+                  <input
+                    type="text"
+                    className="sidebar-search-input"
+                    placeholder="Search submissions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      className="sidebar-search-clear"
+                      onClick={() => setSearchQuery('')}
+                      title="Clear search"
+                    >
+                      <i className="bi bi-x-lg"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {submissions.length === 0 ? (
               <p className="text-muted px-3 py-4">No submissions yet</p>
-                ) : (
+            ) : filteredSubmissions.length === 0 ? (
+              <p className="text-muted px-3 py-4">No submissions found</p>
+            ) : (
               <div className="submission-list">
-                {submissions.map(sub => (
-                    <SubmissionItem
-                      key={sub.id}
-                      submission={sub}
+                {filteredSubmissions.map(sub => (
+                  <SubmissionItem
+                    key={sub.id}
+                    submission={sub}
                     isSelected={selectedSubmission?.id === sub.id}
-                      onSelect={() => loadSubmission(sub.id)}
-                      onDelete={() => deleteSubmission(sub.id)}
-                      onRename={(newName) => renameSubmission(sub.id, newName)}
-                    />
+                    onSelect={() => loadSubmission(sub.id)}
+                    onDelete={() => deleteSubmission(sub.id)}
+                    onRename={(newName) => renameSubmission(sub.id, newName)}
+                  />
                 ))}
               </div>
-                )}
-            </div>
+            )}
+          </div>
           </div>
 
         {/* Main content area */}

@@ -17,11 +17,34 @@ const Model = () => {
   const [fileStructure, setFileStructure] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentFilePath, setCurrentFilePath] = useState(null);
+  const [showNamingModal, setShowNamingModal] = useState(false);
+  const [submissionName, setSubmissionName] = useState('');
+  const [pendingCode, setPendingCode] = useState('');
   const editorRef = useRef(null);
   const folderUploadRef = useRef(null);
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
+  };
+
+  const generateDefaultName = (code) => {
+    if (!code || !code.trim()) {
+      // Fallback to timestamp-based name if no code
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const time = now.toTimeString().slice(0, 5).replace(':', '');
+      return `Submission-${timestamp}-${time}`;
+    }
+    // Try to extract class name from code
+    const classMatch = code.match(/class\s+(\w+)/);
+    if (classMatch && classMatch[1]) {
+      return classMatch[1];
+    }
+    // Fallback to timestamp-based name
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const time = now.toTimeString().slice(0, 5).replace(':', '');
+    return `Submission-${timestamp}-${time}`;
   };
 
   const handleSubmit = async (e) => {
@@ -33,18 +56,31 @@ const Model = () => {
       return;
     }
 
+    // Store code and show naming modal
+    setPendingCode(codeToSubmit);
+    // Start with empty name - default will be shown as placeholder
+    setSubmissionName('');
+    setShowNamingModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    const codeToSubmit = pendingCode;
+    // Use trimmed name if provided, otherwise use default
+    const nameToUse = submissionName.trim() || generateDefaultName(codeToSubmit);
+    
+    setShowNamingModal(false);
     setIsLoading({ ast: true, comments: true, cfg: false });
     setAstOutput('');
     setCommentsOutput('');
-    setAstData(null); // Reset AST data when submitting new code
-    setIsGraphicalView(false); // Reset to text view when submitting new code
+    setAstData(null);
+    setIsGraphicalView(false);
 
     try {
       const response = await fetch('/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ code: codeToSubmit }),
+        body: JSON.stringify({ code: codeToSubmit, submission_name: nameToUse }),
       });
 
       const data = await response.json();
@@ -261,6 +297,65 @@ const Model = () => {
 
   return (
     <div className="model-section" style={{ paddingTop: '70px' }}>
+      {/* Submission Naming Modal */}
+      {showNamingModal && (
+        <div className="modal-overlay" onClick={() => setShowNamingModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h5 className="modal-title">Name Your Submission</h5>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowNamingModal(false)}
+                aria-label="Close"
+              >
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <label htmlFor="submission-name-input" className="form-label">
+                Submission Name
+              </label>
+              <input
+                type="text"
+                id="submission-name-input"
+                className="form-control"
+                placeholder={pendingCode ? generateDefaultName(pendingCode) : 'Enter submission name...'}
+                value={submissionName}
+                onChange={(e) => setSubmissionName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleConfirmSubmit();
+                  }
+                }}
+                autoFocus
+              />
+              {pendingCode && (
+                <p className="modal-help-text">
+                  Leave empty to use default name: <strong>{generateDefaultName(pendingCode)}</strong>
+                </p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowNamingModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary clarifai-btn"
+                onClick={handleConfirmSubmit}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="container-fluid" style={{ maxWidth: '1400px', width: '100%' }}>
         {!isSidebarOpen && (
           <button
