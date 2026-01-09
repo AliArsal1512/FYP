@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import './FileSidebar.css';
 
-const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
-  const [selectedFile, setSelectedFile] = useState(null);
+const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect, currentFilePath }) => {
 
   const findFirstJavaFile = (structure) => {
     for (const key in structure) {
@@ -33,16 +32,15 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
         );
       } else if (item._type === 'file' && key.endsWith('.java')) {
         const fileKey = item.path || key;
-        const isSelected = selectedFile === fileKey;
+        const isSelected = currentFilePath === fileKey;
         items.push(
           <li
             key={key}
             style={{ paddingLeft: level > 0 ? '20px' : '0' }}
             onClick={() => {
-              setSelectedFile(fileKey);
-              onFileSelect(item.file);
+              onFileSelect(item.file, fileKey);
             }}
-            className={`file-item ${isSelected ? 'selected' : ''}`}
+            className={`file-item ${isSelected ? 'file-item-active' : ''}`.trim()}
           >
             <div className="file java">☕ {key}</div>
           </li>
@@ -54,7 +52,10 @@ const FileSidebar = ({ isOpen, onClose, fileStructure, onFileSelect }) => {
 
   return (
     <>
-      {isOpen && <div className="sidebar-backdrop" onClick={onClose}></div>}
+      <div 
+        className={`sidebar-backdrop ${isOpen ? 'show' : ''}`} 
+        onClick={onClose}
+      ></div>
       <div className={`file-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header d-flex justify-content-between align-items-center">
           <h5 className="mb-0">Explorer</h5>

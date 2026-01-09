@@ -28,19 +28,19 @@ body {
 }
 
 [data-theme="dark"] {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --bg-tertiary: #3a3a3a;
-  --text-primary: #e0e0e0;
-  --text-secondary: #b0b0b0;
-  --border-color: #4a4a4a;
-  --cfg-bg: #1e1e1e;
-  --ast-bg: #1e1e1e;
-  --ast-node-bg: #3a3a3a;
-  --ast-node-stroke: #5a9fd4;
-  --ast-link-stroke: #8b8b8b;
-  --code-editor-bg: #1e1e1e;
-  --code-editor-text: #d4d4d4;
+  --bg-primary: #353535;
+  --bg-secondary: #424242;
+  --bg-tertiary: #4f4f4f;
+  --text-primary: #f5f5f5;
+  --text-secondary: #d0d0d0;
+  --border-color: #5a5a5a;
+  --cfg-bg: #000000;
+  --ast-bg: #000000;
+  --ast-node-bg: #4f4f4f;
+  --ast-node-stroke: #6bb3e8;
+  --ast-link-stroke: #a0a0a0;
+  --code-editor-bg: #393939;
+  --code-editor-text: #e5e5e5;
 }
 
 body {
@@ -63,8 +63,21 @@ body {
   color: var(--text-primary) !important;
 }
 
+.card-title {
+  background: linear-gradient(to right, #ff0000, #4565f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
 [data-theme="dark"] .card-title {
-  color: var(--text-primary) !important;
+  background: linear-gradient(to right, #ff7777, #88aaff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
 }
 
 [data-theme="dark"] .card-body {
@@ -86,10 +99,9 @@ body {
 /* Global container styles with glowing shadows - only main containers */
 .container,
 .container-fluid,
-.code-form,
-.cfg-section {
+.code-form {
   border-radius: 12px;
-  transition: box-shadow 0.6s ease, border-color 0.6s ease;
+  transition: box-shadow 0.6s ease;
   position: relative;
 }
 
@@ -97,19 +109,15 @@ body {
 .container:hover,
 .container-fluid:hover,
 .code-form:hover,
-.code-form:active,
-.cfg-section:hover,
-.cfg-section:active {
-  box-shadow: 0 0 20px rgba(59, 108, 255, 0.2), 0 4px 20px rgba(0,0,0,0.1) !important;
+.code-form:active {
+  box-shadow: 0 0 20px rgba(69, 101, 240, 0.3), 0 4px 20px rgba(0,0,0,0.1) !important;
 }
 
 [data-theme="dark"] .container:hover,
 [data-theme="dark"] .container-fluid:hover,
 [data-theme="dark"] .code-form:hover,
-[data-theme="dark"] .code-form:active,
-[data-theme="dark"] .cfg-section:hover,
-[data-theme="dark"] .cfg-section:active {
-  box-shadow: 0 0 25px rgba(59, 108, 255, 0.3), 0 4px 20px rgba(0,0,0,0.3) !important;
+[data-theme="dark"] .code-form:active {
+  box-shadow: 0 0 25px rgba(69, 101, 240, 0.35), 0 4px 20px rgba(0,0,0,0.3) !important;
 }
 
 /* Exclude how-it-works container from glow */
@@ -123,7 +131,7 @@ body {
 
 /* Common button styles */
 .clarifai-btn {
-  background-color: #3b6cff;
+  background-color: #5d72f0;
   color: white !important;
   padding: 8px 13px;
   margin-top: 20px;
@@ -143,9 +151,14 @@ body {
   margin-top: 0;
 }
 
-.clarifai-btn:hover {
-  background-color: #002eb7;
+.clarifai-btn:hover:not(:disabled) {
+  background-color: #4d62e0;
   color: white !important;
+}
+
+.clarifai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .text-clarifai {
@@ -157,11 +170,29 @@ body {
   font-family: 'Cinzel', serif !important;
 }
 
+[data-theme="dark"] .text-clarifai {
+  background: linear-gradient(to right, #ff7777, #88aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
+}
+
 .text-gradient {
   background: linear-gradient(to right, #ff0000, #3b6cff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+[data-theme="dark"] .text-gradient {
+  background: linear-gradient(to right, #ff7777, #88aaff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
 }
 
 /* Theme toggle button */

@@ -75,6 +75,22 @@
           drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
 }
 
+.typing-cursor {
+  display: inline-block;
+  animation: blink 1s infinite;
+  color: var(--text-primary);
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
 .welcome-text {
   text-align: left;
 }
@@ -136,7 +152,7 @@
 }
 
 .try-btn {
-  background-color: #3b6cff;
+  background-color: #4d78ff;
   color: white;
   padding: 10px 16px;
   border: none;
@@ -161,6 +177,7 @@
 #how-it-works {
   position: relative;
   padding-top: 0;
+  padding-bottom: 4rem;
   min-height: 100vh;
   background: linear-gradient(180deg, rgba(248,249,255,0.9) 0%, rgba(255,255,255,0.95) 60%),
               url('/static/images/body-bg2.jpg');
@@ -188,7 +205,7 @@
 }
 
 [data-theme="dark"] #how-it-works {
-  background: linear-gradient(180deg, rgba(26,26,26,0.9) 0%, rgba(45,45,45,0.95) 60%),
+  background: linear-gradient(180deg, rgba(53,53,53,0.9) 0%, rgba(66,66,66,0.95) 60%),
               url('/static/images/body-bg2.jpg');
 }
 
@@ -210,12 +227,23 @@
   background-clip: text;
 }
 
+[data-theme="dark"] #how-it-works h3 {
+  background: linear-gradient(to right, #ff7777, #88aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 #how-it-works .how-divider {
   width: 80px;
   height: 4px;
   margin: 12px auto 0;
   background: linear-gradient(to right, #ff0000, #3b6cff);
   border-radius: 4px;
+}
+
+[data-theme="dark"] #how-it-works .how-divider {
+  background: linear-gradient(to right, #ff7777, #88aaff);
 }
 
 #how-it-works .how-icon {
@@ -226,8 +254,13 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, rgba(255,0,0,0.15), rgba(59,108,255,0.15));
-  box-shadow: inset 0 0 0 1px rgba(59,108,255,0.25);
+  background: linear-gradient(135deg, rgba(255,0,0,0.12), rgba(90,110,160,0.12));
+  box-shadow: inset 0 0 0 1px rgba(90,110,160,0.2);
+}
+
+[data-theme="dark"] #how-it-works .how-icon {
+  background: linear-gradient(135deg, rgba(255,119,119,0.15), rgba(136,170,255,0.15));
+  box-shadow: inset 0 0 0 1px rgba(136,170,255,0.3);
 }
 
 #how-it-works .how-icon i {
@@ -238,24 +271,53 @@
   background-clip: text;
 }
 
+[data-theme="dark"] #how-it-works .how-icon i {
+  background: linear-gradient(135deg, #ff7777, #88aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Card glow effect on hover in How It Works section */
 #how-it-works .card {
   transition: box-shadow 0.6s ease, transform 0.3s ease;
   border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
 }
 
 #how-it-works .card:hover {
-  box-shadow: 0 0 20px rgba(59, 108, 255, 0.2), 0 4px 20px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 0 20px rgba(69, 101, 240, 0.3), 0 4px 20px rgba(0,0,0,0.1) !important;
   transform: translateY(-4px);
 }
 
+[data-theme="dark"] #how-it-works .card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
 [data-theme="dark"] #how-it-works .card:hover {
-  box-shadow: 0 0 25px rgba(59, 108, 255, 0.3), 0 4px 20px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 0 25px rgba(69, 101, 240, 0.35), 0 4px 20px rgba(0,0,0,0.3) !important;
 }
 
 /* Dark mode text fixes */
 [data-theme="dark"] #how-it-works .card-title {
-  color: var(--text-primary) !important;
+  background: linear-gradient(to right, #ff7777, #88aaff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
+}
+
+/* Dark mode for Clarifai word in "How Clarifai Works" heading */
+[data-theme="dark"] #how-it-works h3 .text-clarifai,
+[data-theme="dark"] #how-it-works .text-clarifai {
+  background: linear-gradient(to right, #ff7777, #88aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
 }
 
 [data-theme="dark"] #how-it-works .card-text {

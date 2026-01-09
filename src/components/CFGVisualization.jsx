@@ -44,9 +44,11 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
 
       let svgText = await response.text();
       
-      // Apply dark theme to SVG if needed
+      // Apply theme to SVG to match container background
       if (theme === 'dark') {
         svgText = applyDarkThemeToSVG(svgText);
+      } else {
+        svgText = applyLightThemeToSVG(svgText);
       }
 
       setCfgSvg(svgText);
@@ -65,8 +67,30 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
     const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
     const svgElement = svgDoc.documentElement;
 
-    // Set dark background
-    svgElement.style.backgroundColor = 'var(--cfg-bg)';
+    // Set dark background to match container (black)
+    svgElement.style.backgroundColor = '#000000';
+    
+    // Update any Graphviz-generated background rectangles to match container
+    // Graphviz creates background rectangles that might have old background colors
+    const allRects = svgElement.querySelectorAll('rect, polygon');
+    allRects.forEach(rect => {
+      const fill = rect.getAttribute('fill');
+      // Update old dark background colors (#1e1e1e, transparent black, etc.) to pure black
+      if (fill === '#1e1e1e' || fill === '#00000000' || fill === 'transparent') {
+        rect.setAttribute('fill', '#000000');
+      }
+      // Also check if it's likely a background rectangle (large size)
+      const width = parseFloat(rect.getAttribute('width') || '0');
+      const height = parseFloat(rect.getAttribute('height') || '0');
+      const viewBox = svgElement.getAttribute('viewBox');
+      if (viewBox) {
+        const [, , vbWidth, vbHeight] = viewBox.split(/\s+/).map(parseFloat);
+        // If rectangle covers most of the viewBox, it's likely the background
+        if (width > vbWidth * 0.9 && height > vbHeight * 0.9 && (fill === '#1e1e1e' || fill === '#00000000' || !fill)) {
+          rect.setAttribute('fill', '#000000');
+        }
+      }
+    });
     
     // Update node colors for dark theme
     const nodes = svgElement.querySelectorAll('g.node');
@@ -95,6 +119,38 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
       edge.setAttribute('stroke', '#8b8b8b'); // Lighter edges for dark theme
       if (edge.tagName === 'polygon') {
         edge.setAttribute('fill', '#8b8b8b');
+      }
+    });
+
+    return new XMLSerializer().serializeToString(svgElement);
+  };
+
+  const applyLightThemeToSVG = (svgText) => {
+    // Parse SVG and apply light theme
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+    const svgElement = svgDoc.documentElement;
+
+    // Set light background to match container (white)
+    svgElement.style.backgroundColor = '#ffffff';
+    
+    // Update any Graphviz-generated background rectangles to match container
+    // Graphviz creates background rectangles that might have transparent or old background colors
+    const allRects = svgElement.querySelectorAll('rect, polygon');
+    allRects.forEach(rect => {
+      const fill = rect.getAttribute('fill');
+      // Update transparent fills to white for background rectangles
+      if (fill === '#ffffff00' || fill === 'transparent' || !fill) {
+        const width = parseFloat(rect.getAttribute('width') || '0');
+        const height = parseFloat(rect.getAttribute('height') || '0');
+        const viewBox = svgElement.getAttribute('viewBox');
+        if (viewBox) {
+          const [, , vbWidth, vbHeight] = viewBox.split(/\s+/).map(parseFloat);
+          // If rectangle covers most of the viewBox, it's likely the background
+          if (width > vbWidth * 0.9 && height > vbHeight * 0.9) {
+            rect.setAttribute('fill', '#ffffff');
+          }
+        }
       }
     });
 
@@ -226,10 +282,12 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
     };
   }, [isDragging, startPos, translateX, translateY]);
 
-  // Re-apply dark theme when theme changes
+  // Re-apply theme when theme changes
   useEffect(() => {
-    if (cfgSvg && theme === 'dark') {
-      const updatedSvg = applyDarkThemeToSVG(cfgSvg);
+    if (cfgSvg) {
+      const updatedSvg = theme === 'dark' 
+        ? applyDarkThemeToSVG(cfgSvg) 
+        : applyLightThemeToSVG(cfgSvg);
       setCfgSvg(updatedSvg);
     }
   }, [theme]);
@@ -330,25 +388,24 @@ const CFGVisualization = ({ code, editorRef, theme, isLoading, setIsLoading }) =
           </div>
         </div>
       </div>
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="spinner-border text-primary" role="status"></div>
-          <span className="loading-text">Generating CFG...</span>
-        </div>
-      )}
       <div
         id="cfgContainer"
         ref={containerRef}
-        className="form-control cfg-container"
+        className="form-control cfg-container position-relative"
         style={{
           height: '600px',
           overflow: 'auto',
-          position: 'relative',
           border: '1px solid var(--border-color)',
           backgroundColor: theme === 'dark' ? 'var(--cfg-bg)' : '#ffffff',
           cursor: 'grab',
         }}
       >
+        {isLoading && (
+          <div className="loading-overlay" style={{ zIndex: 100 }}>
+            <i className="bi bi-hourglass-split loading-spinner-icon"></i>
+            <span className="loading-text">Generating CFG...</span>
+          </div>
+        )}
         {cfgSvg && (
           <div
             id="cfgImageWrapper"

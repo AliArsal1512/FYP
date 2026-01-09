@@ -46,16 +46,16 @@
 }
 
 [data-theme="dark"] .log-sign-card {
-  background: #3a3a3a padding-box,
-              linear-gradient(135deg, rgba(255,0,0,0.35), rgba(59,108,255,0.35)) border-box;
+  background: var(--bg-tertiary) padding-box,
+              linear-gradient(135deg, rgba(255,119,119,0.4), rgba(136,170,255,0.4)) border-box;
 }
 
 [data-theme="dark"] .log-sign-card .card-body {
-  background-color: #3a3a3a !important;
+  background-color: var(--bg-tertiary) !important;
 }
 
 [data-theme="dark"] .log-sign-card .form-control {
-  background-color: #1a1a1a !important;
+  background-color: #000000 !important;
   color: var(--text-primary) !important;
   border-color: var(--border-color) !important;
 }

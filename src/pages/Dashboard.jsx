@@ -77,6 +77,76 @@ const Dashboard = () => {
     }
   };
 
+  const copyToClipboard = async (text, type) => {
+    try {
+      // Extract plain text from HTML if needed
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = text;
+      const plainText = tempDiv.textContent || tempDiv.innerText || text;
+      
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(plainText);
+          showCopyFeedback(type, true);
+          return;
+        } catch (clipboardError) {
+          console.warn('Clipboard API failed, trying fallback:', clipboardError);
+          // Fall through to fallback method
+        }
+      }
+      
+      // Fallback method: create a temporary textarea element
+      const textarea = document.createElement('textarea');
+      textarea.value = plainText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-999999px';
+      textarea.style.top = '-999999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+          showCopyFeedback(type, true);
+        } else {
+          throw new Error('execCommand copy failed');
+        }
+      } catch (fallbackError) {
+        document.body.removeChild(textarea);
+        throw fallbackError;
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      showCopyFeedback(type, false);
+    }
+  };
+
+  const showCopyFeedback = (type, success) => {
+    const button = document.querySelector(`[data-copy-type="${type}"]`);
+    if (button) {
+      const originalText = button.innerHTML;
+      if (success) {
+        button.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        button.style.color = '#28a745';
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.style.color = '';
+        }, 2000);
+      } else {
+        button.innerHTML = '<i class="bi bi-x"></i> Failed';
+        button.style.color = '#dc3545';
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.style.color = '';
+        }, 2000);
+      }
+    }
+  };
+
   const renameSubmission = async (submissionId, newName) => {
     try {
       const response = await fetch(`/rename-submission/${submissionId}`, {
@@ -105,7 +175,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {isSidebarOpen && <div className="sidebar-backdrop" onClick={() => setIsSidebarOpen(false)}></div>}
+        <div 
+          className={`sidebar-backdrop ${isSidebarOpen ? 'show' : ''}`} 
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
         {/* Toggle button when sidebar is closed */}
         {!isSidebarOpen && (
           <button
@@ -119,7 +192,7 @@ const Dashboard = () => {
         {/* Sidebar for submissions */}
         <div className={`dashboard-sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">Code History</h5>
+                <h5 className="mb-0">Code History</h5>
             <button 
               className="btn btn-sm btn-outline-secondary" 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -127,26 +200,26 @@ const Dashboard = () => {
             >
               <i className={`bi bi-chevron-${isSidebarOpen ? 'left' : 'right'}`}></i>
             </button>
-          </div>
+              </div>
           <div className="sidebar-content">
-            {submissions.length === 0 ? (
+                {submissions.length === 0 ? (
               <p className="text-muted px-3 py-4">No submissions yet</p>
-            ) : (
+                ) : (
               <div className="submission-list">
                 {submissions.map(sub => (
-                  <SubmissionItem
-                    key={sub.id}
-                    submission={sub}
+                    <SubmissionItem
+                      key={sub.id}
+                      submission={sub}
                     isSelected={selectedSubmission?.id === sub.id}
-                    onSelect={() => loadSubmission(sub.id)}
-                    onDelete={() => deleteSubmission(sub.id)}
-                    onRename={(newName) => renameSubmission(sub.id, newName)}
-                  />
+                      onSelect={() => loadSubmission(sub.id)}
+                      onDelete={() => deleteSubmission(sub.id)}
+                      onRename={(newName) => renameSubmission(sub.id, newName)}
+                    />
                 ))}
               </div>
-            )}
+                )}
+            </div>
           </div>
-        </div>
 
         {/* Main content area */}
         <div className="dashboard-main">
@@ -177,7 +250,7 @@ const Dashboard = () => {
                   </button>
                 </div>
               </div>
-              <div className="card-body p-0 position-relative">
+              <div className="card-body p-0 position-relative" style={{ minHeight: '500px', height: 'auto' }}>
                 {isLoading && (
                   <div className="loading-overlay">
                     <div className="spinner-border text-primary"></div>
@@ -216,16 +289,35 @@ const Dashboard = () => {
                       />
                     )}
                     {viewType === 'comments' && (
-                      <div
-                        style={{
-                          height: '500px',
-                          overflow: 'auto',
-                          padding: '15px',
-                          backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
-                          color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
-                        }}
-                        dangerouslySetInnerHTML={{ __html: selectedSubmission.comments_content }}
-                      />
+                      <div className="position-relative" style={{ height: '500px' }}>
+                        {selectedSubmission.comments_content && (
+                          <div className="d-flex justify-content-end mb-2 px-3 pt-2">
+                            <button
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => copyToClipboard(selectedSubmission.comments_content, 'comments')}
+                              data-copy-type="comments"
+                              style={{
+                                backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                                border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+                                color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                              }}
+                              title="Copy comments to clipboard"
+                            >
+                              <i className="bi bi-clipboard"></i> Copy
+                            </button>
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            height: 'calc(500px - 50px)',
+                            overflow: 'auto',
+                            padding: '15px',
+                            backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
+                            color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: selectedSubmission.comments_content }}
+                        />
+                      </div>
                     )}
                   </>
                 ) : (
@@ -235,9 +327,9 @@ const Dashboard = () => {
                     <p className="empty-state-subtext">Choose a file from the sidebar to view its code, AST, or comments</p>
                   </div>
                 )}
-              </div>
             </div>
           </div>
+        </div>
       </section>
     </div>
   );
@@ -255,7 +347,10 @@ const SubmissionItem = ({ submission, isSelected, onSelect, onDelete, onRename }
   };
 
   return (
-    <div className={`submission-item ${isSelected ? 'selected' : ''}`} onClick={onSelect}>
+    <div 
+      className={`submission-item ${isSelected ? 'submission-item-active' : ''}`.trim()} 
+      onClick={onSelect}
+    >
       <div className="submission-item-content">
         {isEditing ? (
           <input

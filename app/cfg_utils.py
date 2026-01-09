@@ -1286,11 +1286,12 @@ class CFGGenerator:
             default_color = '#2d2d2d'  # Dark background
             default_text_color = '#e0e0e0'  # Light text
             default_edge_color = '#8b8b8b'  # Lighter edges
-            dot.attr('graph', bgcolor='#1e1e1e')  # Dark background for graph
+            dot.attr('graph', bgcolor='#000000')  # Black background to match container
         else:
             default_color = '#e0f7fa'  # Light background
             default_text_color = '#000000'  # Dark text
             default_edge_color = '#000000'  # Dark edges
+            dot.attr('graph', bgcolor='#ffffff')  # White background to match container
         
         dot.attr('edge', color=default_edge_color)
         
@@ -1316,9 +1317,11 @@ class CFGGenerator:
         svg_bytes = dot.pipe()
         svg_content = svg_bytes.decode('utf-8')
         
-        # Post-process SVG for dark theme
+        # Post-process SVG to match container background
         if theme == "dark":
             svg_content = self._apply_dark_theme_to_svg(svg_content)
+        else:
+            svg_content = self._apply_light_theme_to_svg(svg_content)
         
         return svg_content
     
@@ -1338,7 +1341,23 @@ class CFGGenerator:
     def _apply_dark_theme_to_svg(self, svg_content):
         """Apply dark theme styling to SVG content"""
         import re
-        # Set background color
-        svg_content = re.sub(r'<svg', '<svg style="background-color: #1e1e1e;"', svg_content, count=1)
+        # Set SVG element background color to match container (black)
+        # Remove existing style attribute if present, then add new one
+        svg_content = re.sub(r'<svg[^>]*style="[^"]*"', '<svg', svg_content, count=1)
+        svg_content = re.sub(r'<svg([^>]*)>', r'<svg\1 style="background-color: #000000;">', svg_content, count=1)
+        # Also update any Graphviz-generated background rectangles
+        svg_content = re.sub(r'fill="#1e1e1e"', 'fill="#000000"', svg_content)
+        svg_content = re.sub(r'fill="#00000000"', 'fill="#000000"', svg_content)  # Handle transparent fills that should be black
+        return svg_content
+    
+    def _apply_light_theme_to_svg(self, svg_content):
+        """Apply light theme styling to SVG content"""
+        import re
+        # Set SVG element background color to match container (white)
+        # Remove existing style attribute if present, then add new one
+        svg_content = re.sub(r'<svg[^>]*style="[^"]*"', '<svg', svg_content, count=1)
+        svg_content = re.sub(r'<svg([^>]*)>', r'<svg\1 style="background-color: #ffffff;">', svg_content, count=1)
+        # Also update any Graphviz-generated background rectangles
+        svg_content = re.sub(r'fill="#ffffff00"', 'fill="#ffffff"', svg_content)  # Handle transparent fills that should be white
         return svg_content
     

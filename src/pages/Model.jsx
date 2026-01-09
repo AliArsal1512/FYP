@@ -16,6 +16,7 @@ const Model = () => {
   const [isLoading, setIsLoading] = useState({ ast: false, comments: false, cfg: false });
   const [fileStructure, setFileStructure] = useState({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentFilePath, setCurrentFilePath] = useState(null);
   const editorRef = useRef(null);
   const folderUploadRef = useRef(null);
 
@@ -125,6 +126,7 @@ const Model = () => {
     
     setFileStructure(structure);
     setIsSidebarOpen(true);
+    setCurrentFilePath(null); // Reset current file path
     
     // Reset the input so the same folder can be selected again
     if (event.target) {
@@ -133,7 +135,8 @@ const Model = () => {
     
     // Load first Java file
     const firstFile = findFirstJavaFile(structure);
-    if (firstFile) {
+    if (firstFile && firstFile.path) {
+      setCurrentFilePath(firstFile.path);
       const reader = new FileReader();
       reader.onload = (e) => {
         const contents = e.target.result;
@@ -159,7 +162,22 @@ const Model = () => {
     return null;
   };
 
-  const loadFileFromStructure = (file) => {
+  const findFirstJavaFilePath = (structure, currentPath = '') => {
+    for (const key in structure) {
+      if (key === '_type') continue;
+      const fullPath = currentPath ? `${currentPath}/${key}` : key;
+      if (structure[key]._type === 'file' && key.endsWith('.java')) {
+        return fullPath;
+      } else if (structure[key]._type === 'folder') {
+        const result = findFirstJavaFilePath(structure[key], fullPath);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const loadFileFromStructure = (file, filePath) => {
+    setCurrentFilePath(filePath);
     const reader = new FileReader();
     reader.onload = (e) => {
       const contents = e.target.result;
@@ -258,6 +276,7 @@ const Model = () => {
           onClose={() => setIsSidebarOpen(false)}
           fileStructure={fileStructure}
           onFileSelect={loadFileFromStructure}
+          currentFilePath={currentFilePath}
         />
 
         <section className="model-section-content">
@@ -354,30 +373,50 @@ const Model = () => {
                     <button
                       className="btn btn-sm clarifai-btn"
                       onClick={() => setIsGraphicalView(!isGraphicalView)}
+                      disabled={!astOutput && !astData}
+                      title={!astOutput && !astData ? 'No AST available' : ''}
                     >
                       {isGraphicalView ? 'Switch to Text View' : 'Switch to Graphical View'}
                     </button>
                   </div>
                 </div>
-                {isLoading.ast && (
-                  <div className="loading-overlay">
-                    <div className="spinner-border text-primary" role="status"></div>
-                    <span className="loading-text">Generating AST...</span>
-                  </div>
-                )}
                 {isGraphicalView ? (
-                  <ASTVisualization astData={astData} theme={theme} />
+                  <div 
+                    className="position-relative ast-output" 
+                    style={{ 
+                      height: '600px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      backgroundColor: theme === 'dark' ? 'var(--ast-bg)' : '#ffffff'
+                    }}
+                  >
+                    {isLoading.ast && (
+                      <div className="loading-overlay">
+                        <i className="bi bi-hourglass-split loading-spinner-icon"></i>
+                        <span className="loading-text">Generating AST...</span>
+                      </div>
+                    )}
+                    <ASTVisualization astData={astData} theme={theme} />
+                  </div>
                 ) : (
                   <div
-                    className="form-control ast-output"
+                    className="form-control ast-output position-relative"
                     style={{
                       fontFamily: 'monospace',
                       height: '600px',
                       backgroundColor: theme === 'dark' ? 'var(--ast-bg)' : '#ffffff',
                       color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
                     }}
-                    dangerouslySetInnerHTML={{ __html: astOutput }}
-                  />
+                  >
+                    {isLoading.ast && (
+                      <div className="loading-overlay">
+                        <i className="bi bi-hourglass-split loading-spinner-icon"></i>
+                        <span className="loading-text">Generating AST...</span>
+                      </div>
+                    )}
+                    <div dangerouslySetInnerHTML={{ __html: astOutput }} />
+                  </div>
                 )}
               </div>
 
@@ -401,22 +440,23 @@ const Model = () => {
                     </button>
                   )}
                 </div>
-                {isLoading.comments && (
-                  <div className="loading-overlay">
-                    <div className="spinner-border text-primary" role="status"></div>
-                    <span className="loading-text">Generating comments...</span>
-                  </div>
-                )}
                 <div
-                  className="form-control comments-output"
+                  className="form-control comments-output position-relative"
                   style={{
                     fontFamily: 'monospace',
                     height: '600px',
-                    backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                    backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
                     color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
                   }}
-                  dangerouslySetInnerHTML={{ __html: commentsOutput }}
-                />
+                >
+                  {isLoading.comments && (
+                    <div className="loading-overlay">
+                      <i className="bi bi-hourglass-split loading-spinner-icon"></i>
+                      <span className="loading-text">Generating comments...</span>
+                    </div>
+                  )}
+                  <div dangerouslySetInnerHTML={{ __html: commentsOutput }} />
+                </div>
               </div>
 
               {/* CFG Section */}

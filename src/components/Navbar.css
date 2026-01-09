@@ -8,8 +8,11 @@
 }
 
 [data-theme="dark"] #mainNavbar {
-  background: rgba(26, 26, 26, 0.8) !important;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  background: rgba(80, 80, 80, 1) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  border-bottom: 1px solid rgba(100, 100, 100, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 #mainNavbar.navbar-shrink {
@@ -34,6 +37,15 @@
   transition: all 0.3s ease;
 }
 
+[data-theme="dark"] .navbar-brand {
+  background: linear-gradient(to right, #ff7777, #88aaff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  filter: brightness(1.15) drop-shadow(2px 2px 8px rgba(0, 0, 0, 0.7))
+          drop-shadow(4px 4px 12px rgba(0, 0, 0, 0.5));
+}
+
 .nav-link {
   font-size: 1.2rem;
   transition: all 0.3s ease;
@@ -41,7 +53,7 @@
 }
 
 .nav-link:hover {
-  color: #3b6cff !important;
+  color: #5d72f0 !important;
 }
 
 .theme-toggle {

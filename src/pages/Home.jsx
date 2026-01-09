@@ -1,10 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import './Home.css';
 
 const Home = () => {
   const { theme } = useTheme();
+  const [displayedText, setDisplayedText] = useState('');
+  const fullText = "Welcome to Clarifai !";
 
   useEffect(() => {
     // Handle navbar scroll effect
@@ -21,12 +23,73 @@ const Home = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Typing animation effect
+    setDisplayedText('');
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        setDisplayedText(fullText.substring(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+      }
+    }, 100); // 100ms per character
+
+    return () => clearInterval(typingInterval);
+  }, []); // Run once on mount
+
+  // Split displayed text to identify "Clarifai" part for gradient styling
+  const renderAnimatedText = () => {
+    const beforeClarifai = "Welcome to ";
+    const clarifaiText = "Clarifai";
+    const afterClarifai = " !";
+    
+    const currentText = displayedText;
+    const isTyping = currentText.length < fullText.length;
+    
+    if (currentText.length === 0) {
+      return <span className="typing-cursor">|</span>;
+    }
+    
+    if (currentText.length <= beforeClarifai.length) {
+      // Typing "Welcome to "
+      return (
+        <>
+          {currentText}
+          {isTyping && <span className="typing-cursor">|</span>}
+        </>
+      );
+    } else if (currentText.length <= beforeClarifai.length + clarifaiText.length) {
+      // Typing "Clarifai"
+      const clarifaiTyped = currentText.substring(beforeClarifai.length);
+      return (
+        <>
+          {beforeClarifai}
+          <span className="text-clarifai">{clarifaiTyped}</span>
+          {isTyping && <span className="typing-cursor">|</span>}
+        </>
+      );
+    } else {
+      // Finished typing "Clarifai", now typing " !"
+      const afterClarifaiTyped = currentText.substring(beforeClarifai.length + clarifaiText.length);
+      return (
+        <>
+          {beforeClarifai}
+          <span className="text-clarifai">{clarifaiText}</span>
+          {afterClarifaiTyped}
+          {isTyping && <span className="typing-cursor">|</span>}
+        </>
+      );
+    }
+  };
+
   return (
     <div>
       {/* Hero Section */}
       <section className="hero-section p-8" id="hero-section">
         <div className="hero-divider">
-          <h2>Welcome to <span className="text-clarifai">Clarifai</span> !</h2>
+          <h2>{renderAnimatedText()}</h2>
         </div>
         <div className="hero-content">
           <div className="welcome-text mt-4">

@@ -732,9 +732,8 @@ const ASTVisualization = ({ astData, theme }) => {
       ref={wrapperRef}
       style={{
         position: 'relative',
-        height: isFullscreen ? '100vh' : '600px',
+        height: isFullscreen ? '100vh' : '100%',
         width: isFullscreen ? '100vw' : '100%',
-        border: '1px solid var(--border-color)',
         backgroundColor: theme === 'dark' ? 'var(--ast-bg)' : '#ffffff',
       }}
     >
