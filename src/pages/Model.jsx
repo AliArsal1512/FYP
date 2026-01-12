@@ -446,7 +446,7 @@ const Model = () => {
           <div className="container-fluid code-form" style={{ marginBottom: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
             <div className="output-container">
               {/* AST Column */}
-              <div className="ast-section d-flex flex-column position-relative">
+              <div className="ast-container-section d-flex flex-column position-relative">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                   <label className="form-label mb-0">Generated AST</label>
                   <div className="d-flex gap-2 flex-wrap align-items-center">
@@ -479,7 +479,6 @@ const Model = () => {
                   <div 
                     className="position-relative ast-output" 
                     style={{ 
-                      height: '600px',
                       border: '1px solid var(--border-color)',
                       borderRadius: '12px',
                       overflow: 'hidden',
@@ -499,7 +498,6 @@ const Model = () => {
                     className="form-control ast-output position-relative"
                     style={{
                       fontFamily: 'monospace',
-                      height: '600px',
                       backgroundColor: theme === 'dark' ? 'var(--ast-bg)' : '#ffffff',
                       color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
                     }}
@@ -539,7 +537,6 @@ const Model = () => {
                   className="form-control comments-output position-relative"
                   style={{
                     fontFamily: 'monospace',
-                    height: '600px',
                     backgroundColor: theme === 'dark' ? '#000000' : '#ffffff',
                     color: theme === 'dark' ? 'var(--text-primary)' : '#000000',
                   }}

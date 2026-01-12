@@ -77,20 +77,69 @@
   padding-top: 10px;
 }
 
-.ast-section,
+.ast-container-section,
 .comments-section {
-  height: 600px;
   border-radius: 12px;
   padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+  max-height: 600px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ast-container-section > .d-flex:first-child,
+.comments-section > .d-flex:first-child {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+/* Styles for internal AST HTML elements (from backend) - prevent flexbox conflicts */
+.ast-output .ast-section {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: none !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+.ast-output .ast-tree,
+.ast-output .ast-class,
+.ast-output .ast-method,
+.ast-output .ast-field,
+.ast-output .ast-subsection,
+.ast-output .ast-var,
+.ast-output .ast-loop {
+  margin: 0;
+  padding: 0;
+  display: block;
+  height: auto;
+  max-height: none;
 }
 
 .ast-output,
 .comments-output {
-  height: 100% !important;
-  min-height: 300px;
-  overflow: auto !important;
-  resize: none;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  resize: none !important;
   border-radius: 12px !important;
+  position: relative;
+  box-sizing: border-box;
+  display: block !important;
+}
+
+.ast-output > div:not(.loading-overlay),
+.comments-output > div:not(.loading-overlay) {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
 }
 
 #editorContainer {
