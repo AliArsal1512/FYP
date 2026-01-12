@@ -79,30 +79,89 @@ def format_ast(java_code: str) -> str: #
         # Wrap code in class if needed
         wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
         tree = javalang.parse.parse(wrapped_code)
-        output = ['<div class="ast-tree">']
-
+        
+        # First pass: collect all classes and their inheritance relationships
+        class_nodes_map = {}
+        inheritance_map = {}  # Maps parent class name -> list of child class names
+        child_to_parent = {}  # Maps child class name -> parent class name
+        root_classes = []  # Classes that don't extend anything (or extend external classes)
+        
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
             class_name = class_node.name
+            class_nodes_map[class_name] = class_node
+            
+            # Check if class extends another class
+            if hasattr(class_node, 'extends') and class_node.extends:
+                # Get the superclass name
+                parent_name = None
+                if hasattr(class_node.extends, 'name'):
+                    parent_name = class_node.extends.name
+                elif isinstance(class_node.extends, list) and len(class_node.extends) > 0:
+                    # Sometimes extends is a list
+                    parent_name = class_node.extends[0].name if hasattr(class_node.extends[0], 'name') else str(class_node.extends[0])
+                else:
+                    parent_name = str(class_node.extends)
+                
+                # Check if parent class exists in our code
+                if parent_name and parent_name in class_nodes_map:
+                    # Parent is in our code, add to inheritance map
+                    if parent_name not in inheritance_map:
+                        inheritance_map[parent_name] = []
+                    inheritance_map[parent_name].append(class_name)
+                    child_to_parent[class_name] = parent_name
+                else:
+                    # Parent is external, treat as root class
+                    root_classes.append(class_name)
+            else:
+                # No extends, this is a root class
+                root_classes.append(class_name)
+        
+        output = ['<div class="ast-tree">']
+        
+        # Helper function to render a class and its children recursively
+        def render_class_recursive(class_name, indent_level=0):
+            if class_name not in class_nodes_map:
+                return
+            
+            class_node = class_nodes_map[class_name]
+            indent = "    " * indent_level
+            prefix = "└─ " if indent_level > 0 else ""
+            
+            # Show inheritance info
+            extends_info = ""
+            if hasattr(class_node, 'extends') and class_node.extends:
+                if hasattr(class_node.extends, 'name'):
+                    parent_name = class_node.extends.name
+                elif isinstance(class_node.extends, list) and len(class_node.extends) > 0:
+                    parent_name = class_node.extends[0].name if hasattr(class_node.extends[0], 'name') else str(class_node.extends[0])
+                else:
+                    parent_name = str(class_node.extends)
+                extends_info = f" extends {parent_name}"
+            
             output.append(
                 f'<div class="ast-class" data-class="{class_name}" '
                 f'onclick="showClassComments(\'{class_name}\')">'
-                f'📦 Class: {class_name}'
+                f'{indent}{prefix}📦 Class: {class_name}{extends_info}'
                 '</div>'
             )
-
+            
+            # Render fields
             if class_node.fields:
-                output.append('<div class="ast-section">├─ 🟣 Fields:')
+                field_indent = indent + ("    " if indent_level > 0 else "")
+                output.append(f'<div class="ast-section">{field_indent}├─ 🟣 Fields:')
                 for field in class_node.fields:
                     modifiers = " ".join(field.modifiers) if field.modifiers else ""
                     field_type = field.type.name if field.type else "Unknown"
                     for declarator in field.declarators:
                         output.append(
-                            f'<div class="ast-field">│   ├─ {modifiers} {field_type} {declarator.name}</div>'
+                            f'<div class="ast-field">{field_indent}│   ├─ {modifiers} {field_type} {declarator.name}</div>'
                         )
                 output.append('</div>')
-
+            
+            # Render methods
             if class_node.methods:
-                output.append('<div class="ast-section">└─ 🔧 Methods:')
+                method_indent = indent + ("    " if indent_level > 0 else "")
+                output.append(f'<div class="ast-section">{method_indent}└─ 🔧 Methods:')
                 for i, method in enumerate(class_node.methods):
                     is_last_method = i == len(class_node.methods) - 1
                     method_prefix = "    " if is_last_method else "│   "
@@ -114,30 +173,42 @@ def format_ast(java_code: str) -> str: #
                     output.append(
                         f'<div class="ast-method" data-class="{class_name}" data-method="{method.name}" '
                         f'onclick="showMethodComments(\'{class_name}\', \'{method.name}\')">'
-                        f'    {method_prefix} {"└─" if is_last_method else "├─"} 🔹 {modifiers} {return_type} {method.name}({params})'
+                        f'{method_indent}    {method_prefix} {"└─" if is_last_method else "├─"} 🔹 {modifiers} {return_type} {method.name}({params})'
                         '</div>'
                     )
 
-                    method_vars, loops = _process_method_body(method.body) #
+                    method_vars, loops = _process_method_body(method.body)
 
                     if method_vars:
-                        output.append(f'<div class="ast-subsection">{method_prefix} │ └─ 🟡 Variables:')
+                        output.append(f'<div class="ast-subsection">{method_indent}    {method_prefix} │ └─ 🟡 Variables:')
                         for var in method_vars:
-                            output.append(f'<div class="ast-var">{method_prefix} │     ├─ {var}</div>')
+                            output.append(f'<div class="ast-var">{method_indent}    {method_prefix} │     ├─ {var}</div>')
                         output.append('</div>')
 
                     if loops:
-                        output.append(f'<div class="ast-subsection">{method_prefix} └─ 🔁 Loops:')
+                        output.append(f'<div class="ast-subsection">{method_indent}    {method_prefix} └─ 🔁 Loops:')
                         for loop in loops:
-                            output.append(f'<div class="ast-loop">{method_prefix}       ├─ {loop["type"]} Loop')
+                            output.append(f'<div class="ast-loop">{method_indent}    {method_prefix}       ├─ {loop["type"]} Loop')
                             if loop['vars']:
                                 for var in loop['vars']:
-                                    output.append(f'<div class="ast-loop-var">{method_prefix}       │   ├─ 🟠 {var}</div>')
+                                    output.append(f'<div class="ast-loop-var">{method_indent}    {method_prefix}       │   ├─ 🟠 {var}</div>')
                             else:
-                                output.append(f'<div class="ast-loop-empty">{method_prefix}       │   └─ (no variables)</div>')
+                                output.append(f'<div class="ast-loop-empty">{method_indent}    {method_prefix}       │   └─ (no variables)</div>')
                         output.append('</div>')
 
                 output.append('</div>')
+            
+            # Render child classes (subclasses)
+            if class_name in inheritance_map:
+                child_indent = indent + ("    " if indent_level > 0 else "")
+                output.append(f'<div class="ast-subsection">{child_indent}└─ 🔗 Subclasses:')
+                for child_class in inheritance_map[class_name]:
+                    render_class_recursive(child_class, indent_level + 1)
+                output.append('</div>')
+        
+        # Render all root classes (those without parents in our code)
+        for root_class in root_classes:
+            render_class_recursive(root_class, 0)
 
         output.append('</div>')
         return '\n'.join(output)
@@ -407,12 +478,63 @@ def build_ast_json(java_code: str) -> dict:
                                 except Exception as e2:
                                     print(f"Error generating AST comment for method {class_name}.{method['name']}: {e2}")
 
-        # Build AST with comments
+        # First pass: collect all classes and their inheritance relationships
+        class_nodes_map = {}
+        inheritance_map = {}  # Maps parent class name -> list of child class names
+        child_to_parent = {}  # Maps child class name -> parent class name
+        root_classes = []  # Classes that don't extend anything (or extend external classes)
+        
         for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
+            class_name = class_node.name
+            class_nodes_map[class_name] = class_node
+            
+            # Check if class extends another class
+            if hasattr(class_node, 'extends') and class_node.extends:
+                # Get the superclass name
+                parent_name = None
+                if hasattr(class_node.extends, 'name'):
+                    parent_name = class_node.extends.name
+                elif isinstance(class_node.extends, list) and len(class_node.extends) > 0:
+                    parent_name = class_node.extends[0].name if hasattr(class_node.extends[0], 'name') else str(class_node.extends[0])
+                else:
+                    parent_name = str(class_node.extends)
+                
+                # Check if parent class exists in our code
+                if parent_name and parent_name in class_nodes_map:
+                    # Parent is in our code, add to inheritance map
+                    if parent_name not in inheritance_map:
+                        inheritance_map[parent_name] = []
+                    inheritance_map[parent_name].append(class_name)
+                    child_to_parent[class_name] = parent_name
+                else:
+                    # Parent is external, treat as root class
+                    root_classes.append(class_name)
+            else:
+                # No extends, this is a root class
+                root_classes.append(class_name)
+        
+        # Helper function to build class data recursively
+        def build_class_data(class_name):
+            if class_name not in class_nodes_map:
+                return None
+            
+            class_node = class_nodes_map[class_name]
+            
+            # Show inheritance info in name
+            extends_info = ""
+            if hasattr(class_node, 'extends') and class_node.extends:
+                if hasattr(class_node.extends, 'name'):
+                    parent_name = class_node.extends.name
+                elif isinstance(class_node.extends, list) and len(class_node.extends) > 0:
+                    parent_name = class_node.extends[0].name if hasattr(class_node.extends[0], 'name') else str(class_node.extends[0])
+                else:
+                    parent_name = str(class_node.extends)
+                extends_info = f" extends {parent_name}"
+            
             class_data = {
-                "name": class_node.name,
+                "name": f"{class_name}{extends_info}",
                 "type": "class",
-                "comment": class_comments.get(class_node.name, "No comment available"),
+                "comment": class_comments.get(class_name, "No comment available"),
                 "children": []
             }
 
@@ -448,12 +570,33 @@ def build_ast_json(java_code: str) -> dict:
                     method_data = {
                         "name": f"{modifiers} {return_type} {method.name}({params})",
                         "type": "method",
-                        "comment": method_comments.get((class_node.name, method.name), "No comment available")
+                        "comment": method_comments.get((class_name, method.name), "No comment available")
                     }
                     methods_node["children"].append(method_data)
                 class_data["children"].append(methods_node)
-
-            classes.append(class_data)
+            
+            # Add child classes (subclasses) as children
+            if class_name in inheritance_map:
+                subclasses_node = {
+                    "name": "Subclasses",
+                    "type": "subclasses",
+                    "children": []
+                }
+                for child_class_name in inheritance_map[class_name]:
+                    child_class_data = build_class_data(child_class_name)
+                    if child_class_data:
+                        subclasses_node["children"].append(child_class_data)
+                if subclasses_node["children"]:
+                    class_data["children"].append(subclasses_node)
+            
+            return class_data
+        
+        # Build AST starting from root classes
+        classes = []
+        for root_class in root_classes:
+            class_data = build_class_data(root_class)
+            if class_data:
+                classes.append(class_data)
         
         return {"name": "Root", "type": "root", "children": classes}
     
