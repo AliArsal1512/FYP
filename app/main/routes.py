@@ -17,7 +17,7 @@ from . import main_bp # from app/main/__init__.py
 from ..models import CodeSubmission, User # from app/models.py
 from .. import db # from app/__init__.py
 from ..utils import ( # from app/utils.py
-    preprocess_code, format_ast, clean_comment,
+    preprocess_code, format_ast, clean_comment, detect_relationships,
     extract_methods, extract_classes, compute_hash, build_ast_json, wrap_code_if_needed
 )
 
@@ -78,6 +78,7 @@ def home():
             if existing_submission: #
                 ast_output = existing_submission.ast_content #
                 comments_output = existing_submission.comments_content #
+                relationships = detect_relationships(code_input) #
             else:
                 # Wrap code in class if needed (handled in utils functions)
                 # Try parsing to catch any remaining errors
@@ -101,6 +102,7 @@ def home():
 
 
                 ast_output = format_ast(code_input) #
+                relationships = detect_relationships(code_input) #
                 grouped_comments = {} #
 
                 # Batch processing for faster comment generation
@@ -215,6 +217,7 @@ def home():
                 'comments': comments_output,
                 'ast': ast_output,
                 'cfg_supported': True, # Indicate CFG generation is supported
+                'relationships': relationships, # Include relationship data
             })
 
         except Exception as e:
@@ -385,6 +388,8 @@ def delete_submission(submission_id): #
 def ast_json():
     code = request.json.get('code', '')
     ast_data = build_ast_json(code)
+    relationships = detect_relationships(code)
+    ast_data['relationships'] = relationships
     return jsonify(ast_data)
 
 @main_bp.route('/process-folder', methods=['POST'])

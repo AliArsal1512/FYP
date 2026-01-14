@@ -435,3 +435,55 @@
   box-shadow: 0 4px 12px rgba(93, 114, 240, 0.3);
 }
 
+/* Relationships Section Styles */
+.relationships-section {
+  transition: all 0.3s ease;
+}
+
+.relationships-section .form-select {
+  transition: all 0.3s ease;
+}
+
+.relationships-section .form-select:hover {
+  border-color: var(--signature-blue) !important;
+  box-shadow: 0 0 10px rgba(69, 101, 240, 0.2);
+}
+
+.relationships-section .form-select:focus {
+  border-color: var(--signature-blue) !important;
+  box-shadow: 0 0 15px rgba(69, 101, 240, 0.3);
+  outline: none;
+}
+
+.relationships-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--signature-blue) transparent;
+}
+
+.relationships-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.relationships-list::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.relationships-list::-webkit-scrollbar-thumb {
+  background: var(--signature-blue);
+  border-radius: 4px;
+}
+
+.relationships-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(69, 101, 240, 0.8);
+}
+
+.relationships-list .list-group-item {
+  transition: all 0.2s ease;
+}
+
+.relationships-list .list-group-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0, 0,0, 0.1);
+}
+

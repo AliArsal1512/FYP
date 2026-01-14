@@ -399,6 +399,156 @@ def compute_hash(code): #
     return hashlib.sha256(code.encode('utf-8')).hexdigest()
 
 
+def detect_relationships(java_code: str) -> dict:
+    """
+    Detect association, aggregation, and composition relationships between classes.
+    
+    Returns a dictionary with structure:
+    {
+        'association': [{'from': 'ClassA', 'to': 'ClassB', 'via': 'field/method', 'details': '...'}],
+        'aggregation': [...],
+        'composition': [...]
+    }
+    """
+    relationships = {
+        'association': [],
+        'aggregation': [],
+        'composition': []
+    }
+    
+    try:
+        wrapped_code, was_wrapped = wrap_code_if_needed(java_code)
+        tree = javalang.parse.parse(wrapped_code)
+        
+        # Get all class names in the code
+        class_names = set()
+        class_nodes_map = {}
+        
+        for _, class_node in tree.filter(javalang.tree.ClassDeclaration):
+            class_names.add(class_node.name)
+            class_nodes_map[class_node.name] = class_node
+        
+        # Analyze each class for relationships
+        for class_name, class_node in class_nodes_map.items():
+            # Check fields (association/aggregation/composition)
+            if class_node.fields:
+                for field in class_node.fields:
+                    field_type_name = None
+                    generic_arg_name = None
+                    
+                    if field.type:
+                        # Get base type name
+                        if hasattr(field.type, 'name'):
+                            field_type_name = field.type.name
+                        
+                        # Check for generic type arguments (e.g., List<Employee>)
+                        if hasattr(field.type, 'arguments') and field.type.arguments:
+                            for arg in field.type.arguments:
+                                if hasattr(arg, 'name') and arg.name in class_names:
+                                    generic_arg_name = arg.name
+                                    # This is a collection/array relationship (aggregation)
+                                    relationships['aggregation'].append({
+                                        'from': class_name,
+                                        'to': arg.name,
+                                        'via': f'field: {field_type_name or "Collection"}<{arg.name}>',
+                                        'details': f'Field: {[d.name for d in field.declarators]}'
+                                    })
+                    
+                    # Check if base type is a class in our code (skip if we already handled it as generic)
+                    if field_type_name and field_type_name in class_names and field_type_name != generic_arg_name:
+                        # Determine relationship type based on field characteristics
+                        # Check if it's a collection/array (aggregation)
+                        is_collection = False
+                        if hasattr(field.type, 'name'):
+                            type_name = field.type.name.lower()
+                            is_collection = any(coll in type_name for coll in ['list', 'arraylist', 'set', 'hashset', 'collection', 'map', 'hashmap'])
+                        
+                        if is_collection:
+                            rel_type = 'aggregation'
+                        else:
+                            # Check modifiers to determine composition vs association
+                            # Composition: typically final, private, and initialized in constructor
+                            # Association: typically not final, or public/protected
+                            is_final = field.modifiers and 'final' in field.modifiers
+                            is_private = field.modifiers and 'private' in field.modifiers
+                            
+                            # Check if field is initialized in constructor (composition indicator)
+                            initialized_in_constructor = False
+                            if class_node.methods:
+                                for method in class_node.methods:
+                                    # Check if this is a constructor
+                                    is_constructor = (method.name == class_node.name) or (hasattr(method, 'name') and method.name == '<init>')
+                                    if is_constructor and method.body:
+                                        body_str = str(method.body)
+                                        for declarator in field.declarators:
+                                            if declarator.name in body_str and 'new ' in body_str:
+                                                initialized_in_constructor = True
+                                                break
+                            
+                            if is_final and is_private and initialized_in_constructor:
+                                rel_type = 'composition'
+                            else:
+                                rel_type = 'association'
+                        
+                        relationships[rel_type].append({
+                            'from': class_name,
+                            'to': field_type_name,
+                            'via': 'field',
+                            'details': f'Field: {[d.name for d in field.declarators]}'
+                        })
+            
+            # Check method parameters (association)
+            if class_node.methods:
+                for method in class_node.methods:
+                    if method.parameters:
+                        for param in method.parameters:
+                            param_type_name = None
+                            if param.type:
+                                if hasattr(param.type, 'name'):
+                                    param_type_name = param.type.name
+                            
+                            if param_type_name and param_type_name in class_names:
+                                relationships['association'].append({
+                                    'from': class_name,
+                                    'to': param_type_name,
+                                    'via': 'method parameter',
+                                    'details': f'Method: {method.name}(...)'
+                                })
+            
+            # Check method return types (association)
+            if class_node.methods:
+                for method in class_node.methods:
+                    if method.return_type:
+                        return_type_name = None
+                        if hasattr(method.return_type, 'name'):
+                            return_type_name = method.return_type.name
+                        
+                        if return_type_name and return_type_name in class_names:
+                            relationships['association'].append({
+                                'from': class_name,
+                                'to': return_type_name,
+                                'via': 'method return type',
+                                'details': f'Method: {method.name}()'
+                            })
+        
+        # Remove duplicates
+        for rel_type in relationships:
+            seen = set()
+            unique_rels = []
+            for rel in relationships[rel_type]:
+                key = (rel['from'], rel['to'], rel['via'])
+                if key not in seen:
+                    seen.add(key)
+                    unique_rels.append(rel)
+            relationships[rel_type] = unique_rels
+        
+        return relationships
+    
+    except Exception as e:
+        # Return empty relationships on error
+        return {'association': [], 'aggregation': [], 'composition': []}
+
+
 # utils.py
 def build_ast_json(java_code: str) -> dict:
     try:

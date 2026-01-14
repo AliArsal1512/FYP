@@ -20,6 +20,8 @@ const Model = () => {
   const [showNamingModal, setShowNamingModal] = useState(false);
   const [submissionName, setSubmissionName] = useState('');
   const [pendingCode, setPendingCode] = useState('');
+  const [relationships, setRelationships] = useState({ association: [], aggregation: [], composition: [] });
+  const [selectedRelationshipType, setSelectedRelationshipType] = useState(null);
   const editorRef = useRef(null);
   const folderUploadRef = useRef(null);
 
@@ -86,6 +88,7 @@ const Model = () => {
       const data = await response.json();
       setAstOutput(data.ast || 'No AST generated');
       setCommentsOutput(data.comments || 'No comments generated');
+      setRelationships(data.relationships || { association: [], aggregation: [], composition: [] });
       
       // Load AST JSON for graphical view
       if (data.cfg_supported) {
@@ -98,6 +101,9 @@ const Model = () => {
           });
           const astJson = await astResponse.json();
           setAstData(astJson);
+          if (astJson.relationships) {
+            setRelationships(astJson.relationships);
+          }
         } catch (error) {
           console.error('Failed to load AST JSON:', error);
           setAstData(null);
@@ -445,6 +451,132 @@ const Model = () => {
         <section className="output-section" id="output-section">
           <div className="container-fluid code-form" style={{ marginBottom: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
             <div className="output-container">
+              {/* Relationships Dropdown */}
+              {(relationships.association.length > 0 || relationships.aggregation.length > 0 || relationships.composition.length > 0) && (
+                <div className="relationships-section mb-3" style={{
+                  padding: '15px',
+                  borderRadius: '12px',
+                  backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#f8f9fa',
+                  border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#dee2e6'}`
+                }}>
+                  <label className="form-label mb-2" style={{ fontWeight: '600' }}>Class Relationships</label>
+                  <div className="d-flex gap-2 flex-wrap align-items-center mb-2">
+                    <select
+                      className="form-select form-select-sm"
+                      value={selectedRelationshipType || ''}
+                      onChange={(e) => setSelectedRelationshipType(e.target.value || null)}
+                      style={{
+                        maxWidth: '250px',
+                        backgroundColor: theme === 'dark' ? 'var(--bg-primary)' : '#ffffff',
+                        color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                        border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`
+                      }}
+                    >
+                      <option value="">Select Relationship Type</option>
+                      {relationships.association.length > 0 && (
+                        <option value="association">Association ({relationships.association.length})</option>
+                      )}
+                      {relationships.aggregation.length > 0 && (
+                        <option value="aggregation">Aggregation ({relationships.aggregation.length})</option>
+                      )}
+                      {relationships.composition.length > 0 && (
+                        <option value="composition">Composition ({relationships.composition.length})</option>
+                      )}
+                    </select>
+                    {selectedRelationshipType && (
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setSelectedRelationshipType(null)}
+                        style={{
+                          backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#ffffff',
+                          border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#ccc'}`,
+                          color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {selectedRelationshipType && relationships[selectedRelationshipType] && relationships[selectedRelationshipType].length > 0 && (
+                    <div className="relationships-list" style={{
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      backgroundColor: theme === 'dark' ? 'var(--bg-primary)' : '#ffffff',
+                      border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#dee2e6'}`
+                    }}>
+                      <h6 style={{ 
+                        marginBottom: '10px', 
+                        color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                        textTransform: 'capitalize'
+                      }}>
+                        {selectedRelationshipType} Relationships:
+                      </h6>
+                      <div className="list-group">
+                        {relationships[selectedRelationshipType].map((rel, index) => (
+                          <div
+                            key={index}
+                            className="list-group-item"
+                            style={{
+                              marginBottom: '8px',
+                              padding: '12px',
+                              borderRadius: '6px',
+                              backgroundColor: theme === 'dark' ? 'var(--bg-secondary)' : '#f8f9fa',
+                              border: `1px solid ${theme === 'dark' ? 'var(--border-color)' : '#dee2e6'}`,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'var(--bg-primary)' : '#e9ecef';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'var(--bg-secondary)' : '#f8f9fa';
+                            }}
+                            onClick={() => {
+                              // Scroll to class in AST if possible
+                              const classElement = document.querySelector(`[data-class="${rel.from}"]`);
+                              if (classElement) {
+                                classElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                classElement.style.backgroundColor = theme === 'dark' ? 'rgba(138, 43, 226, 0.3)' : 'rgba(138, 43, 226, 0.1)';
+                                setTimeout(() => {
+                                  classElement.style.backgroundColor = '';
+                                }, 2000);
+                              }
+                            }}
+                          >
+                            <div style={{ 
+                              fontWeight: '600',
+                              color: theme === 'dark' ? 'var(--text-primary)' : '#000',
+                              marginBottom: '4px'
+                            }}>
+                              <span style={{ color: theme === 'dark' ? '#8a2be2' : '#6f42c1' }}>{rel.from}</span>
+                              {' → '}
+                              <span style={{ color: theme === 'dark' ? '#8a2be2' : '#6f42c1' }}>{rel.to}</span>
+                            </div>
+                            <div style={{ 
+                              fontSize: '0.85rem',
+                              color: theme === 'dark' ? 'var(--text-secondary)' : '#6c757d'
+                            }}>
+                              <strong>Via:</strong> {rel.via}
+                            </div>
+                            {rel.details && (
+                              <div style={{ 
+                                fontSize: '0.85rem',
+                                color: theme === 'dark' ? 'var(--text-secondary)' : '#6c757d',
+                                marginTop: '4px'
+                              }}>
+                                <strong>Details:</strong> {rel.details}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {/* AST Column */}
               <div className="ast-container-section d-flex flex-column position-relative">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
